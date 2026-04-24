@@ -1,0 +1,2760 @@
+
+
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Planner Elite Pro v6</title>
+
+  <meta name="theme-color" content="#050b14">
+  <link rel="manifest" id="manifest-link">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Planner Elite">
+  <link rel="apple-touch-icon" href="https://i.imgur.com/5S5aZ4c.png">
+  
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.3.0/dist/chart.umd.min.js"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- SortableJS para Drag and Drop dos Exercícios -->
+  <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Poppins:wght@500;600;700;800;900&display=swap');
+
+    :root {
+      --bg-main: #050b14;
+      --bg-card: #151e2e;
+      --bg-elevated: #1e293b;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      
+      --accent-blue: #3b82f6;
+      --accent-teal: #14b8a6;
+      --accent-purple: #8b5cf6;
+      --accent-green: #10b981;
+      --accent-red: #ef4444;
+      --accent-amber: #f59e0b;
+
+      --border-soft: rgba(255, 255, 255, 0.06);
+      --radius-lg: 24px;
+      --radius-md: 16px;
+      --shadow-soft: 0 4px 20px rgba(0, 0, 0, 0.2);
+    }
+
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+    body {
+      background-color: var(--bg-main);
+      color: var(--text-main); margin: 0; padding: 0;
+      display: flex; justify-content: center; min-height: 100vh;
+      font-family: 'Inter', sans-serif;
+      overflow-x: hidden;
+      position: relative;
+    }
+
+    /* =========================================
+       FUNDO DE ESPAÇO E RESPIRAÇÃO (PARALLAX)
+       ========================================= */
+    .space-bg {
+      position: fixed;
+      inset: 0;
+      z-index: -2;
+      overflow: hidden;
+      background-color: var(--bg-main);
+      pointer-events: none;
+    }
+
+    /* Luz de Respiração Central */
+    .bg-breath {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 90vw;
+      height: 90vw;
+      max-width: 600px;
+      max-height: 600px;
+      background: radial-gradient(circle, rgba(59, 130, 246, 0.12) 0%, transparent 60%);
+      border-radius: 50%;
+      transform: translate(-50%, -50%);
+      animation: breatheBackground 6s ease-in-out infinite alternate;
+    }
+
+    @keyframes breatheBackground {
+      0% { transform: translate(-50%, -50%) scale(0.85); opacity: 0.6; }
+      100% { transform: translate(-50%, -50%) scale(1.1); opacity: 1; }
+    }
+
+    /* Configuração das Estrelas */
+    .stars-layer {
+      position: absolute;
+      top: -300px;
+      left: 0;
+      width: 100vw;
+      height: calc(100vh + 300px);
+    }
+
+    /* Estrelas Pequenas e Lentas (Fundo distante) */
+    .stars-slow {
+      background-image: 
+        radial-gradient(1px 1px at 20px 30px, rgba(255,255,255,0.4), transparent),
+        radial-gradient(1px 1px at 70px 140px, rgba(255,255,255,0.4), transparent),
+        radial-gradient(1.5px 1.5px at 130px 80px, rgba(255,255,255,0.5), transparent),
+        radial-gradient(1px 1px at 220px 210px, rgba(255,255,255,0.3), transparent);
+      background-size: 250px 250px;
+      animation: moveStars 40s linear infinite;
+    }
+
+    /* Estrelas Maiores e Rápidas (Mais perto) */
+    .stars-fast {
+      background-image: 
+        radial-gradient(2px 2px at 40px 60px, rgba(255,255,255,0.7), transparent),
+        radial-gradient(1.5px 1.5px at 160px 190px, rgba(255,255,255,0.8), transparent),
+        radial-gradient(2.5px 2.5px at 260px 80px, rgba(255,255,255,0.6), transparent);
+      background-size: 300px 300px;
+      animation: moveStars 20s linear infinite;
+    }
+
+    @keyframes moveStars {
+      0% { transform: translateY(0); }
+      100% { transform: translateY(300px); } 
+    }
+
+    body.no-scroll { overflow: hidden; }
+
+    .app-container { width: 100%; max-width: 450px; padding: 20px; display: flex; flex-direction: column; gap: 16px; padding-bottom: 50px; min-height: 100vh; transition: opacity 0.3s ease; position: relative; z-index: 1;}
+
+    .card { background: var(--bg-card); border: 1px solid var(--border-soft); border-radius: var(--radius-lg); padding: 20px; box-shadow: var(--shadow-soft); position: relative; overflow: hidden; }
+
+    /* HEADER */
+    header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; }
+    .header-center { display: flex; flex-direction: column; align-items: center; flex: 1; }
+    .clock { font-family: 'Poppins', sans-serif; font-size: 32px; font-weight: 800; letter-spacing: -1px; line-height: 1.1; }
+    .status-badge { font-size: 10px; font-weight: 700; letter-spacing: 0.5px; padding: 4px 12px; border-radius: 20px; margin-top: 4px; text-transform: uppercase; }
+    .header-btn { background: var(--bg-elevated); border: 1px solid var(--border-soft); color: var(--text-main); width: 42px; height: 42px; border-radius: 14px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: 0.2s; }
+    .header-btn:active { transform: scale(0.9); }
+    .sos-btn-header { background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.4); color: var(--accent-red); box-shadow: 0 0 15px rgba(239, 68, 68, 0.2); animation: pulseRed 2s infinite; }
+    @keyframes pulseRed { 0%, 100% { box-shadow: 0 0 10px rgba(239, 68, 68, 0.2); } 50% { box-shadow: 0 0 20px rgba(239, 68, 68, 0.5); } }
+
+    /* RPG SYSTEM */
+    .rpg-header { display: flex; align-items: flex-start; gap: 16px; margin-bottom: 12px; }
+    .avatar-wrapper { width: 56px; height: 56px; border-radius: 16px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 15px rgba(0,0,0,0.3); color: #fff; border: 2px solid transparent; transition: 0.5s; cursor: pointer; position: relative;}
+    .avatar-wrapper::after { content: 'i'; position: absolute; bottom: -4px; right: -4px; background: var(--bg-elevated); border: 1px solid var(--border-soft); border-radius: 50%; width: 16px; height: 16px; font-size: 10px; font-family: 'Poppins'; font-weight: 800; display: flex; align-items: center; justify-content: center;}
+    .rpg-info { flex: 1; display: flex; flex-direction: column; gap: 2px; }
+    .class-title { font-family: 'Poppins', sans-serif; font-size: 17px; font-weight: 800; color: var(--text-main); line-height: 1.1; }
+    .class-rank { font-size: 12px; color: var(--text-main); font-weight: 600; opacity: 0.8; }
+    .class-quote { font-size: 11px; color: var(--text-muted); font-style: italic; margin-top: 4px; line-height: 1.3;}
+    .lvl-badge { background: var(--bg-elevated); border: 1px solid var(--border-soft); font-size: 12px; font-weight: 800; padding: 4px 12px; border-radius: 10px; color: #fff; transition: 0.5s; }
+    .xp-bar-bg { height: 8px; background: rgba(0,0,0,0.3); border-radius: 8px; overflow: hidden; margin-bottom: 6px; }
+    .xp-bar-fill { height: 100%; border-radius: 8px; transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1); }
+    .xp-text { font-size: 10px; font-weight: 600; color: var(--text-muted); text-align: right; }
+
+    /* NAV TABS */
+    .nav-tabs { display: flex; justify-content: space-between; background: rgba(0,0,0,0.2); border-radius: 20px; padding: 4px; margin-bottom: 5px; border: 1px solid rgba(255,255,255,0.05); }
+    .tab-btn { flex: 1; background: transparent; border: none; color: var(--text-muted); padding: 10px 0; font-size: 10px; font-weight: 800; text-transform: uppercase; border-radius: 16px; transition: 0.3s; cursor: pointer; text-align: center; letter-spacing: -0.2px; }
+    .tab-btn.active { background: var(--bg-elevated); color: var(--text-main); box-shadow: 0 2px 8px rgba(0,0,0,0.2); font-weight: 800; }
+    .view-section { display: none; } .view-section.active { display: flex; flex-direction: column; gap: 16px; animation: slideFade 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
+    @keyframes slideFade { from { opacity: 0; transform: translateX(20px); } to { opacity: 1; transform: translateX(0); } }
+
+    /* IA CARD - LIA */
+    .ia-card { background: linear-gradient(135deg, rgba(139, 92, 246, 0.05), rgba(0,0,0,0)); border: 1px solid rgba(139, 92, 246, 0.2); padding: 16px; border-radius: var(--radius-md); display: flex; flex-direction: column; gap: 12px; }
+    .ia-header { display: flex; align-items: center; justify-content: space-between; font-size: 11px; font-weight: 800; color: var(--accent-purple); text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 8px;}
+    .ia-header-main { display: flex; align-items: center; gap: 8px; flex: 1; }
+    .ia-icon-bg { width: 28px; height: 28px; background: rgba(139, 92, 246, 0.15); border-radius: 8px; display: flex; align-items: center; justify-content: center; }
+    .ia-insights-list { display: flex; flex-direction: column; gap: 16px; overflow: visible; transition: max-height 0.4s ease, opacity 0.4s ease, margin-top 0.4s ease; opacity: 1; }
+    .ia-insights-list.collapsed { max-height: 0; opacity: 0; margin-top: -12px; overflow: hidden; }
+    .ia-insight-item { display: flex; align-items: flex-start; gap: 10px; font-size: 12.5px; color: var(--text-main); line-height: 1.6; font-weight: 500; } 
+    .ia-insight-item i { flex-shrink: 0; margin-top: 3px; }
+    .ia-insight-item strong { font-weight: 800; color: #fff;}
+    .toggle-ai-btn { background: none; border: none; color: var(--text-muted); cursor: pointer; padding: 4px; display: flex; align-items: center; justify-content: center; border-radius: 50%; }
+    .toggle-ai-btn i { transition: transform 0.3s ease; }
+    .toggle-ai-btn.active i { transform: rotate(180deg); }
+
+    /* STREAKS & CALENDAR */
+    .streak-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .streak-box { text-align: center; background: var(--bg-elevated); padding: 16px; border-radius: var(--radius-md); border: 1px solid var(--border-soft); display: flex; flex-direction: column; justify-content: center; align-items: center;}
+    .streak-val { font-family: 'Poppins', sans-serif; font-size: 32px; font-weight: 900; color: var(--text-main); display: block; line-height: 1; margin: 5px 0; }
+    .streak-label { font-size: 11px; text-transform: uppercase; font-weight: 700; display:flex; align-items: center; gap:4px;}
+    .cal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+    .cal-nav { background: rgba(255,255,255,0.1); border: none; color: #fff; width: 35px; height: 35px; border-radius: 10px; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+    .cal-title { font-family: 'Poppins', sans-serif; font-size: 14px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; }
+    .weekdays { display: grid; grid-template-columns: repeat(7, 1fr); text-align: center; font-size: 10px; font-weight: 800; opacity: 0.5; margin-bottom: 8px; }
+    .grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
+    .day { aspect-ratio: 1/1; border-radius: 10px; background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.05); display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; cursor: pointer; transition: 0.2s; }
+    .day.filled { background: rgba(16, 185, 129, 0.15); border-color: var(--accent-green); color: var(--accent-green); }
+    .day.today { border: 2px solid var(--accent-blue); box-shadow: 0 0 15px rgba(59, 130, 246, 0.3); background: rgba(59, 130, 246, 0.1); color: #fff; }
+
+    /* SECTION TITLE & STATS */
+    .section-title { font-family: 'Poppins', sans-serif; font-size: 13px; font-weight: 800; text-transform: uppercase; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; color: var(--text-main); }
+    .stats-grid-modern { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .stat-card-modern { background: var(--bg-elevated); border-radius: var(--radius-md); padding: 16px; display: flex; flex-direction: column; justify-content: space-between; gap: 10px; border: 1px solid var(--border-soft); transition: transform 0.2s, background 0.2s; }
+    .stat-card-modern.clickable:active { transform: scale(0.96); background: rgba(255,255,255,0.05); cursor: pointer; }
+    .stat-card-modern.clickable { cursor: pointer; }
+    .stat-card-modern.full { grid-column: 1 / -1; }
+    .stat-card-modern.outline { background: rgba(59, 130, 246, 0.05); border: 1px solid rgba(59, 130, 246, 0.2); }
+    .stat-lbl-modern { font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--text-muted); display: flex; align-items: center; gap: 6px; }
+    .stat-val-modern { font-family: 'Poppins', sans-serif; font-size: 24px; font-weight: 800; line-height: 1; color: var(--text-main); display: flex; align-items: center; gap: 8px;}
+    
+    .trend-badge { font-family: 'Inter', sans-serif; font-size: 11px; font-weight: 700; padding: 4px 8px; border-radius: 8px; display: flex; align-items: center; gap: 4px; width: fit-content; }
+    .trend-up { background: rgba(16, 185, 129, 0.15); color: var(--accent-green); }
+    .trend-down { background: rgba(239, 68, 68, 0.15); color: var(--accent-red); }
+    .trend-neutral { background: rgba(148, 163, 184, 0.15); color: var(--text-muted); }
+
+    .stat-sub-modern { font-size: 11px; color: var(--text-muted); font-weight: 600; margin-top: 4px; }
+    .unit { font-size: 12px; color: var(--text-muted); font-weight: 600; text-transform: lowercase; margin-left: 2px;}
+    .split { display: flex; justify-content: space-between; align-items: flex-start; }
+
+    /* GOALS */
+    .goal-row { display: flex; justify-content: space-between; font-size: 12px; font-weight: 600; margin-bottom: 6px; color: var(--text-main); align-items: center;}
+    .goal-bar-bg { height: 8px; background: rgba(0,0,0,0.3); border-radius: 8px; margin-bottom: 16px; overflow: hidden; }
+    .goal-bar-fill { height: 100%; border-radius: 8px; transition: width 0.5s ease; }
+    .custom-goal-card { background: rgba(255,255,255,0.02); border: 1px solid var(--border-soft); border-radius: 12px; padding: 12px; margin-bottom: 10px; display: flex; align-items: center; gap: 12px; }
+    .goal-info { flex: 1; cursor: pointer; }
+    .goal-increment-btn { flex-shrink: 0; width: 40px; height: 40px; border-radius: 50%; background: rgba(59, 130, 246, 0.15); border: 1px solid rgba(59, 130, 246, 0.3); color: var(--accent-blue); display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s; }
+    .goal-increment-btn:active { transform: scale(0.9); background: rgba(59, 130, 246, 0.3); }
+    
+    .heatmap-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; margin-bottom: 10px; }
+    .heat-square { aspect-ratio: 1/1; border-radius: 6px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.02); display: flex; align-items: center; justify-content: center; font-size: 9px; font-weight: 700; color: var(--text-muted); }
+
+    /* CONQUISTAS */
+    .ach-container { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 10px; }
+    .ach-card { border-radius: 16px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s; aspect-ratio: 1 / 1; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+    .ach-card:active { transform: scale(0.92); }
+
+    /* AURA ENERGIA DE HOJE */
+    .energy-orb-container { position: relative; width: 140px; height: 140px; margin: 30px auto 40px; border-radius: 50%; background: #080d17; box-shadow: inset 0 10px 20px rgba(0,0,0,0.8), inset 0 -2px 10px rgba(255,255,255,0.02), 0 2px 2px rgba(255,255,255,0.05); display: flex; align-items: center; justify-content: center; }
+    .energy-orb-glow { position: absolute; inset: 0; border-radius: 50%; opacity: 0.5; transition: box-shadow 0.6s ease; }
+    .energy-orb-val { position: relative; z-index: 2; font-family: 'Poppins', sans-serif; font-size: 46px; font-weight: 900; letter-spacing: -2px; transition: color 0.5s ease, text-shadow 0.5s ease; }
+    .energy-list { display: flex; flex-direction: column; gap: 12px; background: rgba(0,0,0,0.2); padding: 20px; border-radius: var(--radius-md); border: 1px solid var(--border-soft); }
+    .energy-item { display: flex; align-items: center; gap: 12px; font-size: 13px; font-weight: 600; color: var(--text-muted); }
+    .energy-item.good { color: var(--accent-green); }
+    .energy-item.bad { color: var(--accent-red); }
+    .energy-item.warn { color: var(--accent-amber); }
+    .energy-item.info { color: var(--accent-blue); }
+    .mood-counters { display: flex; justify-content: space-between; font-size: 11px; font-weight: 700; color: var(--text-muted); margin-bottom: 16px; padding-bottom: 16px; border-bottom: 1px solid var(--border-soft); }
+    .toggle-energy-btn { background: transparent; border: none; color: var(--text-muted); font-size: 10px; font-weight: 800; cursor: pointer; display: flex; align-items: center; gap: 4px; text-transform: uppercase;}
+
+    /* TREINOS (ABA) */
+    .workout-day-card { background: rgba(0,0,0,0.2); border: 1px solid var(--border-soft); border-radius: 14px; padding: 14px; margin-bottom: 10px; display: flex; flex-direction: column; gap: 4px; cursor: pointer; transition: 0.2s; position: relative;}
+    .workout-day-card:active { transform: scale(0.98); background: rgba(255,255,255,0.05); }
+    .w-day-name { font-size: 11px; font-weight: 800; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
+    .w-day-desc { font-size: 13px; color: var(--text-main); font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .w-day-empty { font-size: 12px; color: var(--text-muted); font-style: italic; }
+
+    /* Classes SortableJS - Para os exercícios */
+    .sortable-ghost { opacity: 0.3; }
+    .sortable-drag { background: rgba(59, 130, 246, 0.15) !important; border-color: rgba(59, 130, 246, 0.4) !important; transform: scale(1.02); }
+
+    /* CARD DE EXERCÍCIO (ACORDEÃO) */
+    .ex-card { background: rgba(255,255,255,0.03); border: 1px solid var(--border-soft); border-radius: 12px; margin-bottom: 8px; overflow: hidden; transition: 0.2s; }
+    .ex-card-header { display: flex; justify-content: space-between; align-items: center; padding: 12px; cursor: pointer; }
+    .ex-card-header:active { background: rgba(255,255,255,0.05); }
+    .ex-card-title { font-size: 13px; font-weight: 700; color: #fff; margin-bottom: 2px; }
+    .ex-card-sub { font-size: 11px; color: var(--text-muted); font-weight: 500; }
+    .ex-card-sub strong { color: var(--accent-blue); font-weight: 700; }
+    .ex-actions { display: flex; gap: 6px; padding: 10px 12px; background: rgba(0,0,0,0.2); border-top: 1px solid var(--border-soft); }
+
+    /* BUTTONS */
+    .btn-action { width: 100%; padding: 16px; border-radius: 16px; border: none; font-weight: 700; font-size: 14px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: 0.2s; font-family: 'Inter', sans-serif; }
+    .btn-action:active { transform: scale(0.96); }
+    .btn-relapse { background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); color: var(--accent-red); }
+    .btn-primary { background: var(--accent-blue); color: #fff; box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3); }
+    .btn-edit { background: var(--bg-elevated); border: 1px solid var(--border-soft); color: var(--text-main); padding: 6px 12px; font-size: 11px; border-radius: 8px; cursor: pointer; font-weight: 600; display: flex; align-items: center; gap: 6px; }
+    
+    .btn-ai-mini { background: rgba(139, 92, 246, 0.15); color: var(--accent-purple); border: 1px solid rgba(139, 92, 246, 0.3); padding: 6px 12px; font-size: 10px; font-weight: 800; text-transform: uppercase; border-radius: 10px; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: 0.2s; margin-left: auto; }
+    .btn-ai-mini:active { transform: scale(0.95); }
+    @keyframes spin { 100% { transform: rotate(360deg); } }
+    .spin { animation: spin 1s linear infinite; }
+
+    /* MODAIS */
+    .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); display: none; justify-content: center; align-items: flex-end; z-index: 100; opacity: 0; transition: opacity 0.4s ease; }
+    .modal-overlay.open { opacity: 1; }
+    .bottom-sheet { background: var(--bg-card); width: 100%; max-height: 92vh; overflow-y: auto; border-radius: 32px 32px 0 0; padding: 20px 24px 40px; border-top: 1px solid rgba(255,255,255,0.1); transform: translateY(100%); transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1); box-shadow: 0 -10px 40px rgba(0,0,0,0.5); }
+    .modal-overlay.open .bottom-sheet { transform: translateY(0); }
+    .sheet-handle { width: 48px; height: 5px; background: rgba(255,255,255,0.2); border-radius: 10px; margin: 0 auto 24px; }
+    .sheet-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
+    .sheet-header h2 { margin: 0; font-family: 'Poppins', sans-serif; font-size: 18px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+    .close-btn { background: var(--bg-elevated); border: none; color: var(--text-muted); width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: 0.2s;}
+    .close-btn:active { transform: scale(0.9); }
+    
+    .section-lbl { font-size: 12px; font-weight: 700; color: var(--text-muted); margin: 24px 0 12px; display: flex; align-items: center; gap: 6px; text-transform: uppercase;}
+    .chip-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .chip-label { background: var(--bg-elevated); border: 1px solid var(--border-soft); padding: 14px; border-radius: 16px; display: flex; align-items: center; gap: 10px; font-size: 13px; font-weight: 500; cursor: pointer; transition: 0.2s; color: var(--text-muted); }
+    .chip-label input { display: none; }
+    .chip-label.selected { background: rgba(59, 130, 246, 0.1); border-color: rgba(59, 130, 246, 0.3); color: var(--accent-blue); font-weight: 600; }
+    
+    .input-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .input-box { background: var(--bg-elevated); border: 1px solid var(--border-soft); border-radius: 16px; padding: 12px 16px; }
+    .input-box-small { background: var(--bg-elevated); border: 1px solid var(--border-soft); border-radius: 12px; padding: 8px 10px; }
+    .input-box-small input { font-size: 14px; width: 100%; background: transparent; border: none; color: var(--text-main); outline: none; font-family: 'Inter', sans-serif; font-weight: 600; }
+    .input-box label { display: block; font-size: 11px; font-weight: 600; color: var(--text-muted); margin-bottom: 4px; }
+    .input-box input { width: 100%; background: transparent; border: none; color: var(--text-main); font-family: 'Inter', sans-serif; font-size: 16px; font-weight: 600; outline: none; }
+    .input-box input::placeholder, .input-box-small input::placeholder { color: rgba(255,255,255,0.2); font-weight: 400;}
+    textarea.full-width { width: 100%; background: var(--bg-elevated); border: 1px solid var(--border-soft); border-radius: 16px; padding: 16px; color: var(--text-main); font-family: 'Inter', sans-serif; font-size: 14px; outline: none; resize: none; margin-top: 4px; }
+
+    input[type=number]::-webkit-inner-spin-button, input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+    input[type=number] { -moz-appearance: textfield; }
+    
+    .sos-sheet { background: var(--bg-card); border-top: 1px solid rgba(239, 68, 68, 0.4); box-shadow: 0 -10px 50px rgba(239, 68, 68, 0.2); }
+    .sos-header h2 { color: var(--accent-red); }
+    .breathe-circle { width: 120px; height: 120px; border-radius: 50%; margin: 20px auto; background: radial-gradient(circle, rgba(59, 130, 246, 0.15), transparent); border: 2px solid var(--accent-blue); display: flex; align-items: center; justify-content: center; font-family: 'Poppins', sans-serif; font-size: 18px; font-weight: 800; color: var(--accent-blue); animation: breatheAnim 8s ease-in-out infinite; box-shadow: 0 0 20px rgba(59, 130, 246, 0.5); }
+    @keyframes breatheAnim { 0%, 100% { transform: scale(0.8); opacity: 0.6; } 50% { box-shadow: 0 0 40px rgba(59, 130, 246, 0.5); } }
+    .sos-timer { font-family: 'Poppins', sans-serif; font-size: 48px; font-weight: 900; text-align: center; color: var(--text-main); letter-spacing: 2px; margin: 20px 0;}
+    
+    .codex-card { background: rgba(255,255,255,0.02); border: 1px solid var(--border-soft); border-radius: 16px; padding: 16px; margin-bottom: 16px; }
+    .codex-header { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+    .codex-icon { width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; }
+    .codex-title { font-family: 'Poppins', sans-serif; font-weight: 800; font-size: 16px; color: #fff; line-height: 1;}
+    .codex-req { font-size: 11px; color: var(--text-muted); font-weight: 600; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid var(--border-soft);}
+    .codex-tiers { display: flex; flex-direction: column; gap: 8px; }
+    .codex-tier-row { display: flex; justify-content: space-between; align-items: center; font-size: 11px; padding: 8px 12px; background: rgba(0,0,0,0.2); border-radius: 8px; }
+    .codex-tier-lvl { font-weight: 800; color: var(--text-muted); width: 45px;}
+    .codex-tier-name { font-weight: 700; color: #fff; flex: 1;}
+    .codex-tier-rarity { font-weight: 800; font-size: 10px; text-transform: uppercase;}
+
+    .confirm-sheet { max-width: 320px; margin: auto; border-radius: 24px; padding: 24px; text-align: center; border: 1px solid var(--border-soft); box-shadow: 0 10px 40px rgba(0,0,0,0.5); transform: scale(0.95); transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1); background: var(--bg-card); }
+    .modal-overlay.open .confirm-sheet { transform: scale(1); }
+    .confirm-title { font-family: 'Poppins', sans-serif; font-size: 18px; font-weight: 700; margin-bottom: 12px; color: var(--text-main); }
+    .confirm-msg { font-size: 13px; color: var(--text-muted); line-height: 1.5; margin-bottom: 24px; }
+
+    .bal-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+    .bal-box { background: rgba(255,255,255,0.03); padding: 10px; border-radius: 12px; border: 1px solid var(--border-soft); display: flex; align-items: center; justify-content: space-between;}
+    .bal-box label { font-size: 11px; color: var(--text-muted); font-weight: 600; }
+    .bal-box input { width: 50px; background: var(--bg-elevated); border: 1px solid var(--border-soft); padding: 6px; text-align: center; color: #fff; font-weight: 700; border-radius: 8px;}
+
+    /* TOAST NOTIFICATION */
+    .toast-notification { position: fixed; bottom: -100px; left: 50%; transform: translateX(-50%); background: var(--bg-elevated); color: var(--text-main); padding: 12px 20px; border-radius: 16px; border: 1px solid var(--border-soft); box-shadow: 0 5px 20px rgba(0,0,0,0.4); font-size: 13px; font-weight: 600; z-index: 2000; display: flex; align-items: center; gap: 10px; transition: bottom 0.5s cubic-bezier(0.2, 0.8, 0.2, 1); }
+    .toast-notification.show { bottom: 30px; }
+  </style>
+</head>
+<body>
+
+  <!-- NOVO FUNDO: ESPAÇO + RESPIRAÇÃO -->
+  <div class="space-bg">
+    <div class="stars-layer stars-slow"></div>
+    <div class="stars-layer stars-fast"></div>
+    <div class="bg-breath"></div>
+  </div>
+
+  <div class="app-container" id="appContainer">
+    <header>
+      <button class="header-btn sos-btn-header" onclick="openSOS()"><i data-lucide="siren" size="20"></i></button>
+      <div class="header-center">
+          <div id="digitalClock" class="clock">00:00</div>
+          <div id="systemStatus" class="status-badge" style="background: rgba(16, 185, 129, 0.1); color: var(--accent-green);">Status Seguro</div>
+      </div>
+      <button class="header-btn" onclick="openModal('settingsModal')"><i data-lucide="settings" size="20"></i></button>
+    </header>
+
+    <div class="card">
+      <div class="rpg-header">
+        <div class="avatar-wrapper" id="rpgAvatar" onclick="openModal('heroProfileModal')">
+            <i data-lucide="shield" size="28" id="rpgIcon"></i>
+        </div>
+        <div class="rpg-info">
+            <div class="class-title" id="rpgClass">...</div>
+            <div class="class-rank" id="rpgRank">Analisando...</div>
+            <div class="class-quote" id="rpgQuote">"O início de uma jornada lendária."</div>
+        </div>
+        <div class="lvl-badge" id="rpgLevel" style="align-self: flex-start;">LVL 1</div>
+      </div>
+      <div class="xp-bar-bg"><div class="xp-bar-fill" id="xpBar" style="width: 0%;"></div></div>
+      <div class="xp-text" id="xpText">0 / 0 XP</div>
+    </div>
+
+    <div class="nav-tabs">
+        <button class="tab-btn active" onclick="switchTab('geral', 0)" id="tab-0">Geral</button>
+        <button class="tab-btn" onclick="switchTab('resumo', 1)" id="tab-1">Resumo</button>
+        <button class="tab-btn" onclick="switchTab('metas', 2)" id="tab-2">Metas</button>
+        <button class="tab-btn" onclick="switchTab('energia', 3)" id="tab-3">Energia</button>
+        <button class="tab-btn" onclick="switchTab('treinos', 4)" id="tab-4">Treinos</button>
+    </div>
+
+    <!-- ABA GERAL -->
+    <div id="view-geral" class="view-section active">
+        
+        <div class="ia-card" id="aiSummaryCard" style="display: none;">
+            <div class="ia-header">
+                <div class="ia-header-main">
+                    <div class="ia-icon-bg"><i data-lucide="brain-circuit" size="14"></i></div>
+                    <span>Análise de Rotina</span>
+                </div>
+                <button class="btn-ai-mini" data-action="generate" onclick="handleAiButtonClick(this, 'triggerGeralAI')"><i data-lucide="sparkles" size="12"></i> Falar com Lia</button>
+                <button class="toggle-ai-btn" onclick="toggleAICard(this)"><i data-lucide="chevron-down" size="18"></i></button>
+            </div>
+            
+            <div class="ia-insights-list" id="aiSummaryList">
+                <div id="cortex-aiSummaryList"></div>
+                <div id="manual-aiSummaryList" style="display:flex; flex-direction:column; gap:14px;"></div>
+            </div>
+        </div>
+
+        <div id="evalBannerContainer"></div>
+
+        <div class="streak-grid">
+          <div class="streak-box">
+            <span class="streak-label" style="color: var(--accent-purple);"><i data-lucide="flame" size="14"></i> Sem PMO</span>
+            <span class="streak-val" id="streakPmo" style="color: var(--text-main);">0</span>
+          </div>
+          <div class="streak-box">
+            <span class="streak-label" style="color: var(--accent-teal);"><i data-lucide="cookie" size="14"></i> Sem Açúcar</span>
+            <span class="streak-val" id="streakSugar" style="color: var(--text-main);">0</span>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="cal-header">
+            <button class="cal-nav" onclick="changeMonth(-1)"><i data-lucide="chevron-left" size="18"></i></button>
+            <div class="cal-title" id="monthLabel">JANEIRO 2024</div>
+            <button class="cal-nav" onclick="changeMonth(1)"><i data-lucide="chevron-right" size="18"></i></button>
+          </div>
+          <div class="weekdays"><div>D</div><div>S</div><div>T</div><div>Q</div><div>Q</div><div>S</div><div>S</div></div>
+          <div class="grid" id="calendarGrid"></div>
+        </div>
+
+        <button class="btn-action btn-relapse" onclick="askRelapse()"><i data-lucide="rotate-ccw" size="18"></i> Registrar Falha no PMO</button>
+    </div>
+
+    <!-- ABA RESUMO -->
+    <div id="view-resumo" class="view-section">
+        <div class="ia-card" id="aiResumoCard" style="display: none; margin-bottom: 0px;">
+            <div class="ia-header">
+                <div class="ia-header-main">
+                    <div class="ia-icon-bg"><i data-lucide="activity" size="14"></i></div>
+                    <span>Diagnóstico Metabólico</span>
+                </div>
+                <button class="btn-ai-mini" data-action="generate" onclick="handleAiButtonClick(this, 'triggerResumoAI')"><i data-lucide="sparkles" size="12"></i> Falar com Lia</button>
+                <button class="toggle-ai-btn" onclick="toggleAICard(this)"><i data-lucide="chevron-down" size="18"></i></button>
+            </div>
+            <div class="ia-insights-list" id="aiResumoList">
+                <div id="cortex-aiResumoList"></div>
+                <div id="manual-aiResumoList" style="display:flex; flex-direction:column; gap:14px;"></div>
+            </div>
+        </div>
+
+        <div class="section-title" style="margin-top: 10px;">
+            <span style="display:flex; align-items:center; gap:8px;"><i data-lucide="line-chart" size="18"></i> Analytics Mensal</span>
+        </div>
+        
+        <div class="stats-grid-modern">
+            <div class="stat-card-modern full clickable" onclick="openGraphModal('weight')">
+                <div class="split" style="align-items: center;">
+                    <div>
+                        <div class="stat-lbl-modern"><i data-lucide="scale" size="14"></i> Peso Atual</div>
+                        <div class="stat-val-modern" id="resWeightAvg">0.0 <span class="unit">kg</span></div>
+                    </div>
+                    <div id="resWeightDiffBadge"></div>
+                </div>
+            </div>
+            
+            <div class="stat-card-modern clickable" onclick="openGraphModal('arm')">
+                <div class="stat-lbl-modern" style="color: var(--accent-blue);"><i data-lucide="dumbbell" size="14"></i> Braço</div>
+                <div class="stat-val-modern" id="resArmVal">0.0 <span class="unit">cm</span></div>
+                <div id="resArmDiffBadge" style="margin-top: 4px;"></div>
+            </div>
+            <div class="stat-card-modern clickable" onclick="openGraphModal('belly')">
+                <div class="stat-lbl-modern" style="color: var(--accent-purple);"><i data-lucide="scan-line" size="14"></i> Cintura</div>
+                <div class="stat-val-modern" id="resBellyVal">0.0 <span class="unit">cm</span></div>
+                <div id="resBellyDiffBadge" style="margin-top: 4px;"></div>
+            </div>
+
+            <div class="stat-card-modern">
+                <div class="stat-lbl-modern" style="color: var(--accent-green);"><i data-lucide="utensils" size="14"></i> Consumidas</div>
+                <div class="stat-val-modern" id="resCalInVal">0 <span class="unit">kcal</span></div>
+            </div>
+            <div class="stat-card-modern">
+                <div class="stat-lbl-modern" style="color: var(--accent-red);"><i data-lucide="flame" size="14"></i> Gastas</div>
+                <div class="stat-val-modern" id="resCalOutVal">0 <span class="unit">kcal</span></div>
+            </div>
+            <div class="stat-card-modern">
+                <div class="stat-lbl-modern" style="color: var(--accent-blue);"><i data-lucide="droplet" size="14"></i> Água Média</div>
+                <div class="stat-val-modern" id="resWaterMed">0.0 <span class="unit">L</span></div>
+            </div>
+            <div class="stat-card-modern">
+                <div class="stat-lbl-modern" style="color: var(--accent-purple);"><i data-lucide="beef" size="14"></i> Prot. Média</div>
+                <div class="stat-val-modern" id="resProtMed">0 <span class="unit">g</span></div>
+            </div>
+
+            <div class="stat-card-modern full outline">
+                <div class="split" style="align-items: center;">
+                    <div class="stat-lbl-modern" style="color: var(--accent-blue); margin:0;">Saldo Calórico Total</div>
+                    <div class="stat-val-modern" style="color: var(--accent-green);" id="resCalNet">0 <span class="unit" style="color:inherit;">kcal</span></div>
+                </div>
+            </div>
+
+            <div class="stat-card-modern">
+                <div class="stat-lbl-modern"><i data-lucide="dumbbell" size="14"></i> Consistência</div>
+                <div class="stat-val-modern" id="resConsistency">0%</div>
+                <div class="stat-sub-modern">Dias c/ treino</div>
+            </div>
+            <div class="stat-card-modern">
+                <div class="stat-lbl-modern"><i data-lucide="moon" size="14"></i> Sono Médio</div>
+                <div class="stat-val-modern" id="resSonoMed">0h</div>
+                <div class="stat-sub-modern">No mês</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ABA METAS -->
+    <div id="view-metas" class="view-section">
+        <div class="card">
+            <div class="section-title">
+                <span style="display:flex; align-items:center; gap:8px;"><i data-lucide="target" size="18"></i> Metas Base</span>
+                <button class="btn-edit" onclick="openModal('goalsModal')">Editar</button>
+            </div>
+            <div class="goal-row"><span>Treinos Físicos</span><span id="goalWorkoutText">0/20</span></div>
+            <div class="goal-bar-bg"><div class="goal-bar-fill" id="goalWorkoutBar" style="width: 0%; background: var(--accent-blue);"></div></div>
+
+            <div class="goal-row"><span>Leitura (Páginas)</span><span id="goalReadingText">0/200</span></div>
+            <div class="goal-bar-bg"><div class="goal-bar-fill" id="goalReadingBar" style="width: background: var(--accent-purple);"></div></div>
+
+            <div class="goal-row"><span>Média de Sono</span><span id="goalSleepText">0h (Meta: 7h)</span></div>
+            <div class="goal-bar-bg"><div class="goal-bar-fill" id="goalSleepBar" style="width: 0%; background: var(--accent-green);"></div></div>
+            
+            <div class="goal-row"><span>Braço (Objetivo)</span><span id="goalArmText">0/0 cm</span></div>
+            <div class="goal-bar-bg"><div class="goal-bar-fill" id="goalArmBar" style="width: 0%; background: var(--accent-blue);"></div></div>
+
+            <div class="goal-row"><span>Cintura (Objetivo)</span><span id="goalBellyText">0/0 cm</span></div>
+            <div class="goal-bar-bg"><div class="goal-bar-fill" id="goalBellyBar" style="width: 0%; background: var(--accent-amber);"></div></div>
+        </div>
+
+        <div class="card">
+            <div class="section-title">
+                <span style="display:flex; align-items:center; gap:8px;"><i data-lucide="list-checks" size="18"></i> Metas Pessoais</span>
+                <button class="btn-edit" onclick="openCustomGoalModal()">+ Nova</button>
+            </div>
+            <div id="customGoalsList"></div>
+        </div>
+
+        <div class="card">
+            <div class="section-title">
+                <span style="display:flex; align-items:center; gap:8px;"><i data-lucide="activity" size="18"></i> Humor</span>
+            </div>
+            <div id="moodHeatmapGrid" class="heatmap-grid"></div>
+            <div style="display:flex; justify-content:space-between; font-size:9px; font-weight:600; color: var(--text-muted); text-transform:uppercase;">
+                <span><span style="color:var(--accent-green);">■</span> Ótimo</span>
+                <span><span style="color:var(--accent-blue);">■</span> Bom</span>
+                <span><span style="color:var(--accent-amber);">■</span> Neutro</span>
+                <span><span style="color:var(--accent-red);">■</span> Ruim</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- ABA ENERGIA -->
+    <div id="view-energia" class="view-section">
+        <div class="card" id="energyTodayCard">
+            <div class="section-title">
+                <span style="display:flex; align-items:center; gap:8px; color: var(--accent-green); text-transform: uppercase;">
+                    <i data-lucide="zap" size="18"></i> Energia de Hoje
+                </span>
+                <button class="toggle-energy-btn" onclick="toggleEnergyView()">Ver Mês ↺</button>
+            </div>
+
+            <div class="ia-card" id="aiEnergyTodayCard" style="margin-bottom: 16px;">
+                <div class="ia-header">
+                    <div class="ia-header-main">
+                        <div class="ia-icon-bg"><i data-lucide="battery-charging" size="14"></i></div>
+                        <span>Calibração Diária</span>
+                    </div>
+                    <button class="btn-ai-mini" data-action="generate" onclick="handleAiButtonClick(this, 'triggerEnergyTodayAI')"><i data-lucide="sparkles" size="12"></i> Falar com Lia</button>
+                    <button class="toggle-ai-btn" onclick="toggleAICard(this)"><i data-lucide="chevron-down" size="18"></i></button>
+                </div>
+                <div class="ia-insights-list" id="aiEnergyTodayList">
+                    <div id="cortex-aiEnergyTodayList"></div>
+                    <div id="manual-aiEnergyTodayList" style="display:flex; flex-direction:column; gap:14px;"></div>
+                </div>
+            </div>
+            
+            <div class="energy-orb-container">
+                <div class="energy-orb-glow" id="energyOrbGlow"></div>
+                <div class="energy-orb-val" id="energyTodayVal">0%</div>
+            </div>
+
+            <div class="energy-list" id="energyTodayList"></div>
+        </div>
+
+        <div class="card" id="energyMonthCard" style="display:none;">
+            <div class="section-title">
+                <span style="display:flex; align-items:center; gap:8px; color: var(--accent-green); text-transform: uppercase;">
+                    <i data-lucide="zap" size="18"></i> Energia do Mês
+                </span>
+                <button class="toggle-energy-btn" onclick="toggleEnergyView()">Ver Hoje ↺</button>
+            </div>
+
+            <div class="ia-card" id="aiEnergyMonthCard" style="margin-bottom: 16px;">
+                <div class="ia-header">
+                    <div class="ia-header-main">
+                        <div class="ia-icon-bg"><i data-lucide="bar-chart-2" size="14"></i></div>
+                        <span>Análise de Ciclo</span>
+                    </div>
+                    <button class="btn-ai-mini" data-action="generate" onclick="handleAiButtonClick(this, 'triggerEnergyMonthAI')"><i data-lucide="sparkles" size="12"></i> Falar com Lia</button>
+                    <button class="toggle-ai-btn" onclick="toggleAICard(this)"><i data-lucide="chevron-down" size="18"></i></button>
+                </div>
+                <div class="ia-insights-list" id="aiEnergyMonthList">
+                    <div id="cortex-aiEnergyMonthList"></div>
+                    <div id="manual-aiEnergyMonthList" style="display:flex; flex-direction:column; gap:14px;"></div>
+                </div>
+            </div>
+            
+            <div class="mood-counters" id="energyMoodCounts"></div>
+
+            <div style="height: 120px; width: 100%; margin-bottom: 20px;">
+                <canvas id="energyChart"></canvas>
+            </div>
+
+            <div class="energy-list" id="energyMonthList"></div>
+            
+            <div style="margin-top: 15px; font-size: 11px; font-weight: 700; color: var(--text-muted); display:flex; align-items:center; gap:6px;">
+                <i data-lucide="trending-up" size="14"></i> Consistência Geral: <span id="energyMonthConsistency" style="color:var(--text-main);">0%</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- ABA TREINOS -->
+    <div id="view-treinos" class="view-section">
+        
+        <div class="ia-card" style="margin-bottom: 16px;">
+            <div class="ia-header">
+                <div class="ia-header-main">
+                    <div class="ia-icon-bg"><i data-lucide="dumbbell" size="14"></i></div>
+                    <span>Analista de Sobrecarga</span>
+                </div>
+                <button class="btn-ai-mini" data-action="generate" onclick="handleAiButtonClick(this, 'triggerTreinoAI')"><i data-lucide="sparkles" size="12"></i> Falar com Lia</button>
+                <button class="toggle-ai-btn" onclick="toggleAICard(this)"><i data-lucide="chevron-down" size="18"></i></button>
+            </div>
+            <div class="ia-insights-list" id="aiWorkoutList">
+                <div id="cortex-aiWorkoutList"></div>
+                <div id="manual-aiWorkoutList" style="display:flex; flex-direction:column; gap:14px;"></div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="section-title" style="margin-bottom: 20px;">
+                <span style="display:flex; align-items:center; gap:8px;"><i data-lucide="list-todo" size="18"></i> Rotina Semanal</span>
+            </div>
+            <div id="workoutPlanContainer"></div>
+        </div>
+    </div>
+    
+    <!-- TOAST DE NOTIFICAÇÃO -->
+    <div id="toast" class="toast-notification"></div>
+
+  </div> 
+
+  <!-- MODAIS -->
+
+  <div class="modal-overlay" id="heroProfileModal">
+      <div class="bottom-sheet">
+          <div class="sheet-handle"></div>
+          <div class="sheet-header">
+              <h2><i data-lucide="user" size="20"></i> Perfil do Herói</h2>
+              <button class="close-btn" onclick="closeModal('heroProfileModal')"><i data-lucide="x" size="20"></i></button>
+          </div>
+
+          <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 24px; background: rgba(0,0,0,0.2); padding: 16px; border-radius: 16px; border: 1px solid var(--border-soft);">
+              <div id="heroModalAvatar" style="width: 64px; height: 64px; border-radius: 16px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; box-shadow: 0 4px 15px rgba(0,0,0,0.3);"></div>
+              <div style="flex: 1;">
+                  <div id="heroModalClass" style="font-family: 'Poppins', sans-serif; font-size: 18px; font-weight: 800; color: #fff; line-height: 1.1;">...</div>
+                  <div id="heroModalRank" style="font-size: 13px; font-weight: 600; margin-bottom: 4px;">...</div>
+                  <div id="heroModalLevel" class="lvl-badge" style="display: inline-block;">LVL ?</div>
+              </div>
+          </div>
+
+          <div style="margin-bottom: 24px;">
+              <div style="display:flex; justify-content: space-between; font-size: 11px; font-weight: 600; color: var(--text-muted); margin-bottom: 6px;">
+                  <span>Progresso do Nível</span>
+                  <span id="heroModalXpText">0 / 0 XP</span>
+              </div>
+              <div class="xp-bar-bg"><div class="xp-bar-fill" id="heroModalXpBar" style="width: 0%;"></div></div>
+          </div>
+
+          <div class="section-lbl" style="margin-bottom: 16px; margin-top: 0;"><i data-lucide="award" size="14"></i> Caminho da Lenda</div>
+          <div id="achievementsList" class="ach-container" style="margin-bottom: 32px;"></div>
+
+          <button class="btn-action" style="background: rgba(255,255,255,0.05); color: var(--text-main); border: 1px solid var(--border-soft);" onclick="closeModal('heroProfileModal'); setTimeout(function(){ openModal('classesModal'); }, 300)">
+              <i data-lucide="library" size="18"></i> Consultar Códice de Classes
+          </button>
+      </div>
+  </div>
+
+  <div class="modal-overlay" id="achModal">
+      <div class="bottom-sheet">
+          <div class="sheet-handle"></div>
+          <div class="sheet-header">
+              <h2 id="achModalTitle"><i data-lucide="trophy" size="20"></i> Conquista</h2>
+              <button class="close-btn" onclick="closeModal('achModal')"><i data-lucide="x" size="20"></i></button>
+          </div>
+          
+          <div style="display:flex; align-items:center; gap: 16px; margin-bottom: 24px;">
+              <div id="achModalIcon" style="width: 56px; height: 56px; border-radius: 16px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;"></div>
+              <div style="flex:1;">
+                  <div id="achModalName" style="font-family: 'Poppins', sans-serif; font-size: 18px; font-weight: 800; color: #fff; line-height: 1.1; margin-bottom: 4px;">Nome</div>
+                  <div id="achModalTier" style="font-size: 13px; font-weight: 600; color: var(--text-muted);">Tier</div>
+              </div>
+          </div>
+          
+          <div style="margin-bottom: 8px; display:flex; justify-content: space-between; font-size: 12px; font-weight: 600; color: var(--text-main);">
+              <span>Progresso</span>
+              <span id="achModalCount">0 / 0</span>
+          </div>
+          <div style="height: 8px; background: rgba(0,0,0,0.3); border-radius: 8px; overflow: hidden; margin-bottom: 12px;">
+              <div id="achModalBar" style="height: 100%; border-radius: 8px; transition: width 0.5s ease;"></div>
+          </div>
+          <div id="achModalNext" style="font-size: 11px; color: var(--text-muted); text-align: center; font-weight: 600;">Próximo Nível: ???</div>
+      </div>
+  </div>
+
+  <div class="modal-overlay" id="graphModal">
+      <div class="bottom-sheet" style="padding-bottom: 20px;">
+          <div class="sheet-handle"></div>
+          <div class="sheet-header">
+              <h2 id="graphModalTitle"><i data-lucide="bar-chart-2" size="20"></i> Evolução</h2>
+              <button class="close-btn" onclick="closeModal('graphModal')"><i data-lucide="x" size="20"></i></button>
+          </div>
+          <div style="height: 250px; width: 100%;">
+              <canvas id="morphGraph"></canvas>
+          </div>
+      </div>
+  </div>
+
+  <div class="modal-overlay" id="evalModal">
+      <div class="bottom-sheet">
+          <div class="sheet-handle"></div>
+          <div class="sheet-header">
+              <h2><i data-lucide="ruler" size="20"></i> Avaliação Morfológica</h2>
+              <button class="close-btn" onclick="closeModal('evalModal')"><i data-lucide="x" size="20"></i></button>
+          </div>
+          <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 24px;">Registre suas medidas para acompanhar a sua evolução de recomposição corporal.</p>
+          
+          <div class="input-grid" style="margin-bottom: 24px;">
+              <div class="input-box">
+                  <label style="color:var(--accent-blue)">Braço (cm)</label>
+                  <input type="number" step="0.1" inputmode="decimal" id="evalArm" placeholder="Ex: 39.5">
+              </div>
+              <div class="input-box">
+                  <label style="color:var(--accent-purple)">Cintura/Barriga (cm)</label>
+                  <input type="number" step="0.1" inputmode="decimal" id="evalBelly" placeholder="Ex: 82.0">
+              </div>
+          </div>
+          <button class="btn-action btn-primary" style="background: var(--accent-green);" onclick="saveEvaluation()">Salvar Medidas</button>
+      </div>
+  </div>
+
+  <div class="modal-overlay" id="workoutPlanModal">
+      <div class="bottom-sheet">
+          <div class="sheet-handle"></div>
+          <div class="sheet-header">
+              <h2 id="wpModalTitle">Treino</h2>
+              <!-- Botão Minimalista de Copiar ao Lado do Fechar -->
+              <div style="display:flex; gap:12px; align-items:center;">
+                  <button class="close-btn" style="background: rgba(59, 130, 246, 0.1); color: var(--accent-blue);" onclick="openCopyWorkoutModal()"><i data-lucide="copy" size="18"></i></button>
+                  <button class="close-btn" onclick="closeModal('workoutPlanModal')"><i data-lucide="x" size="20"></i></button>
+              </div>
+          </div>
+          <input type="hidden" id="wpDayId">
+          
+          <div class="input-box" style="margin-bottom: 16px; background: rgba(59, 130, 246, 0.05); border-color: rgba(59, 130, 246, 0.2);">
+              <label style="color: var(--accent-blue);">Nome do Treino (Opcional)</label>
+              <input type="text" id="wpDayTitleInput" placeholder="Ex: Costas e Bíceps" style="font-size: 15px; color: #fff;" onchange="autoSaveWorkout()">
+          </div>
+          
+          <!-- Lista Onde o Drag and Drop de EXERCÍCIOS vai Acontecer -->
+          <div id="wpExerciseList" style="display:flex; flex-direction:column; gap:8px; margin-bottom:16px;"></div>
+          
+          <div id="wpAddFormContainer" style="display:none; background: rgba(0,0,0,0.2); padding: 12px; border-radius: 12px; border: 1px solid var(--border-soft); margin-bottom: 20px; transition: 0.3s;">
+              <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 8px; font-weight: 700; text-transform: uppercase;">Adicionar / Editar Exercício</div>
+              
+              <div class="input-box" style="margin-bottom: 8px;"><input type="text" id="wpExName" placeholder="Nome (Ex: Supino Reto)" style="font-size: 14px;"></div>
+              <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px;">
+                  <div class="input-box-small"><input type="number" id="wpExSets" inputmode="numeric" placeholder="Séries"></div>
+                  <div class="input-box-small"><input type="number" id="wpExReps" inputmode="numeric" placeholder="Reps"></div>
+                  <div class="input-box-small"><input type="number" id="wpExWeight" inputmode="decimal" placeholder="Peso(kg)"></div>
+              </div>
+              
+              <div style="display:flex; gap:6px; margin-top: 12px;">
+                  <button class="btn-action" style="flex:0.5; padding: 10px; background: rgba(255,255,255,0.05); color: var(--text-muted); justify-content: center; font-size: 11px; border-radius: 8px;" onclick="closeExerciseForm()">Cancelar</button>
+                  <button class="btn-edit" id="wpAddAndNewBtn" style="flex:1; padding: 10px; background: rgba(16, 185, 129, 0.1); color: var(--accent-green); justify-content: center; font-size: 11px;" onclick="addExerciseToPlan(true)">+ Salvar e Novo</button>
+                  <button class="btn-edit" id="wpAddBtn" style="flex:1; padding: 10px; background: rgba(59, 130, 246, 0.1); color: var(--accent-blue); justify-content: center; font-size: 11px;" onclick="addExerciseToPlan(false)">Salvar e Fechar</button>
+              </div>
+          </div>
+
+          <button class="btn-action" style="background: rgba(59, 130, 246, 0.1); color: var(--accent-blue); margin-bottom: 12px;" onclick="openNewExerciseForm()"><i data-lucide="plus" size="18"></i> Adicionar Exercício</button>
+
+          <div style="display:flex; gap:10px;">
+              <button class="btn-action" id="btnToggleRest" style="background: rgba(255,255,255,0.05); color: var(--accent-green); flex:0.6;" onclick="toggleRestDay()">Marcar Descanso</button>
+              <button class="btn-action btn-primary" style="flex:1;" onclick="saveWorkoutPlan()"><i data-lucide="check" size="18"></i> Concluído</button>
+          </div>
+      </div>
+  </div>
+
+  <!-- NOVO MODAL: COPIAR TREINO DE OUTRO DIA -->
+  <div class="modal-overlay" id="copyWorkoutModal" style="z-index: 150;">
+      <div class="bottom-sheet">
+          <div class="sheet-handle"></div>
+          <div class="sheet-header">
+              <h2><i data-lucide="copy" size="20"></i> Copiar de qual dia?</h2>
+              <button class="close-btn" onclick="closeModal('copyWorkoutModal')"><i data-lucide="x" size="20"></i></button>
+          </div>
+          <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 20px;">Escolha um dia para clonar exercícios, peso e repetições para o treino atual.</p>
+          <div id="copyDayList" style="display:flex; flex-direction:column; gap:8px;">
+              <!-- JS vai preencher os botões aqui -->
+          </div>
+      </div>
+  </div>
+
+  <div class="modal-overlay" id="settingsModal">
+      <div class="bottom-sheet">
+          <div class="sheet-handle"></div>
+          <div class="sheet-header">
+              <h2><i data-lucide="settings" size="20"></i> Configurações</h2>
+              <button class="close-btn" onclick="closeModal('settingsModal')"><i data-lucide="x" size="20"></i></button>
+          </div>
+          
+          <button id="btn-install" class="btn-action btn-primary" style="display:none; margin-bottom: 20px; background: var(--accent-green);" onclick="installPWA()">📲 Instalar App no Celular</button>
+
+          <div class="section-lbl">Métricas Base (Cálculos)</div>
+          <div class="input-grid" style="grid-template-columns: 1fr 1fr;">
+              <div class="input-box"><label>Idade</label><input type="number" id="cfgAge" inputmode="numeric" placeholder="Ex: 28"></div>
+              <div class="input-box"><label>Altura (cm)</label><input type="number" id="cfgHeight" inputmode="numeric" placeholder="Ex: 183"></div>
+              <div class="input-box"><label>Peso Atual (Kg)</label><input type="number" id="cfgWeight" step="0.1" inputmode="decimal" placeholder="Ex: 85.0"></div>
+              <div class="input-box"><label>Taxa Basal (Kcal)</label><input type="number" id="cfgBasal" inputmode="numeric" placeholder="Ex: 1900"></div>
+          </div>
+          <button class="btn-edit" style="width: 100%; margin-top: 8px; padding: 10px; background: rgba(255,255,255,0.05); color: #fff; justify-content: center;" onclick="autoCalcBasal()"><i data-lucide="calculator" size="14"></i> Auto-calcular Basal</button>
+          
+          <div class="section-lbl" style="margin-top: 24px;">Marco Zero (Medidas Iniciais)</div>
+          <div class="input-grid" style="grid-template-columns: 1fr 1fr;">
+              <div class="input-box"><label>Braço Inicial (cm)</label><input type="number" id="cfgInitialArm" step="0.1" inputmode="decimal" placeholder="Ex: 38.0"></div>
+              <div class="input-box"><label>Cintura Inicial (cm)</label><input type="number" id="cfgInitialBelly" step="0.1" inputmode="decimal" placeholder="Ex: 85.0"></div>
+          </div>
+
+          <div class="section-lbl" style="margin-top: 24px;">Controle de Experiência (RPG)</div>
+          <button class="btn-action" style="background: rgba(255,255,255,0.05); color: var(--text-main); font-size: 13px;" onclick="openModal('balanceModal')"><i data-lucide="sliders-horizontal" size="16"></i> Ajustar Balanceamento de EXP</button>
+
+          <div class="section-lbl" style="margin-top: 24px;">Dados e Segurança</div>
+          <div class="chip-grid">
+              <button class="btn-action" style="padding:12px; background: rgba(59, 130, 246, 0.1); color: var(--accent-blue); border: 1px solid rgba(59, 130, 246, 0.3); font-size:12px;" onclick="exportData()"><i data-lucide="download" size="16"></i> Exportar</button>
+              <label class="btn-action" style="padding:12px; background: rgba(245, 158, 11, 0.1); color: var(--accent-amber); border: 1px solid rgba(245, 158, 11, 0.3); cursor:pointer; font-size:12px;"><i data-lucide="upload" size="16"></i> Importar<input type="file" id="importFile" style="display:none;" accept=".json" onchange="importData(event)"></label>
+          </div>
+
+          <button class="btn-action btn-primary" style="margin-top: 30px;" onclick="saveSettings()">Salvar Ajustes</button>
+      </div>
+  </div>
+
+  <div class="modal-overlay" id="balanceModal">
+      <div class="bottom-sheet">
+          <div class="sheet-handle"></div>
+          <div class="sheet-header">
+              <h2><i data-lucide="sliders-horizontal" size="20"></i> Balanceamento EXP</h2>
+              <button class="close-btn" onclick="closeModal('balanceModal')"><i data-lucide="x" size="20"></i></button>
+          </div>
+          <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 20px;">Ajuste quanto de experiência (XP) cada atividade fornece ao seu avatar por dia.</p>
+          <div class="bal-grid">
+              <div class="bal-box"><label>🏋️ Treino</label><input type="number" id="cfgExpWorkout" inputmode="numeric"></div>
+              <div class="bal-box"><label>📖 Leitura (Pág)</label><input type="number" id="cfgExpReading" inputmode="numeric"></div>
+              <div class="bal-box"><label>🛡️ Sem PMO</label><input type="number" id="cfgExpPmo" inputmode="numeric"></div>
+              <div class="bal-box"><label>🍃 S/ Açúcar</label><input type="number" id="cfgExpSugar" inputmode="numeric"></div>
+              <div class="bal-box"><label>🧘 Meditação</label><input type="number" id="cfgExpMeditate" inputmode="numeric"></div>
+              <div class="bal-box"><label>💤 Sono (≥ 7h)</label><input type="number" id="cfgExpSleep" inputmode="numeric"></div>
+          </div>
+          <button class="btn-action btn-primary" style="margin-top: 30px;" onclick="saveBalance()">Aplicar Balanceamento</button>
+      </div>
+  </div>
+
+  <div class="modal-overlay" id="classesModal">
+      <div class="bottom-sheet">
+          <div class="sheet-handle"></div>
+          <div class="sheet-header">
+              <h2><i data-lucide="library" size="20"></i> Códice de Classes</h2>
+              <button class="close-btn" onclick="closeModal('classesModal')"><i data-lucide="x" size="20"></i></button>
+          </div>
+          <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 20px;">Sua classe dominante é definida pela sua consistência em áreas específicas. Ao upar de nível, sua patente evolui e o requisito de EXP aumenta.</p>
+          <div id="codexContainer"></div>
+      </div>
+  </div>
+
+  <div class="modal-overlay" id="confirmModal" style="z-index: 1000 !important;">
+    <div class="confirm-sheet" style="background: var(--bg-card);">
+        <h3 class="confirm-title" id="confirmTitle">Tem certeza?</h3>
+        <p class="confirm-msg" id="confirmMsg">Esta ação não poderá ser desfeita.</p>
+        <div style="display: flex; gap: 10px;">
+            <button class="btn-action" style="background: rgba(255,255,255,0.05); color: #fff;" onclick="closeConfirmModal()">Cancelar</button>
+            <button class="btn-action btn-relapse" id="confirmOkBtn" onclick="executeConfirm()">Confirmar</button>
+        </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="moodModal">
+      <div class="bottom-sheet" style="text-align: center; border-top: 1px solid rgba(255,255,255,0.05);">
+          <div class="sheet-handle"></div>
+          <h2 style="margin-bottom: 8px; font-size: 18px; font-weight: 800; color: var(--text-main);">Calibração do Sistema</h2>
+          <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 24px;">Registre seu status operacional de hoje.</p>
+          
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+              <button class="chip-label" style="justify-content:center; flex-direction:column; gap:8px; padding:20px; border-color: rgba(16, 185, 129, 0.2); background: rgba(16, 185, 129, 0.05);" onclick="registerMood('Otimo')">
+                  <i data-lucide="zap" size="28" style="color:var(--accent-green);"></i>
+                  <span style="color:var(--accent-green); font-weight:700; font-size: 14px;">Pico (Flow)</span>
+              </button>
+              <button class="chip-label" style="justify-content:center; flex-direction:column; gap:8px; padding:20px; border-color: rgba(59, 130, 246, 0.2); background: rgba(59, 130, 246, 0.05);" onclick="registerMood('Bom')">
+                  <i data-lucide="battery-charging" size="28" style="color:var(--accent-blue);"></i>
+                  <span style="color:var(--accent-blue); font-weight:700; font-size: 14px;">Operante</span>
+              </button>
+              <button class="chip-label" style="justify-content:center; flex-direction:column; gap:8px; padding:20px; border-color: rgba(245, 158, 11, 0.2); background: rgba(245, 158, 11, 0.05);" onclick="registerMood('Neutro')">
+                  <i data-lucide="activity" size="28" style="color:var(--accent-amber);"></i>
+                  <span style="color:var(--accent-amber); font-weight:700; font-size: 14px;">Manutenção</span>
+              </button>
+              <button class="chip-label" style="justify-content:center; flex-direction:column; gap:8px; padding:20px; border-color: rgba(239, 68, 68, 0.2); background: rgba(239, 68, 68, 0.05);" onclick="registerMood('Ruim')">
+                  <i data-lucide="battery-warning" size="28" style="color:var(--accent-red);"></i>
+                  <span style="color:var(--accent-red); font-weight:700; font-size: 14px;">Drenado</span>
+              </button>
+          </div>
+      </div>
+  </div>
+
+  <div class="modal-overlay" id="goalsModal">
+    <div class="bottom-sheet">
+      <div class="sheet-handle"></div>
+      <div class="sheet-header">
+        <h2>Editar Metas Base</h2>
+        <button class="close-btn" onclick="closeModal('goalsModal')"><i data-lucide="x" size="20"></i></button>
+      </div>
+      <div class="input-grid" style="margin-bottom: 24px;">
+        <div class="input-box"><label>Treinos / Mês</label><input type="number" id="goalInputWorkout" inputmode="numeric"></div>
+        <div class="input-box"><label>Leitura (Págs)</label><input type="number" id="goalInputReading" inputmode="numeric"></div>
+        <div class="input-box" style="grid-column: 1/-1;"><label>Média Sono (h)</label><input type="number" id="goalInputSleep" step="0.5" inputmode="decimal"></div>
+        
+        <div class="input-box"><label>Braço (Objetivo cm)</label><input type="number" id="goalInputArm" step="0.1" inputmode="decimal"></div>
+        <div class="input-box"><label>Cintura (Objetivo cm)</label><input type="number" id="goalInputBelly" step="0.1" inputmode="decimal"></div>
+      </div>
+      <button class="btn-action btn-primary" onclick="saveGoals()">Salvar Metas</button>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="customGoalModal">
+    <div class="bottom-sheet">
+      <div class="sheet-handle"></div>
+      <div class="sheet-header">
+        <h2 id="cgTitle">Nova Meta</h2>
+        <button class="close-btn" onclick="closeModal('customGoalModal')"><i data-lucide="x" size="20"></i></button>
+      </div>
+      <input type="hidden" id="cgId">
+      <div class="input-box" style="margin-bottom: 12px;"><label>Nome da Meta</label><input type="text" id="cgName" placeholder="Ex: Beber Água"></div>
+      <div class="input-grid" style="margin-bottom: 24px;">
+        <div class="input-box"><label>Progresso Atual</label><input type="number" id="cgCurrent" value="0" inputmode="numeric"></div>
+        <div class="input-box"><label>Objetivo</label><input type="number" id="cgTarget" placeholder="Ex: 30" inputmode="numeric"></div>
+      </div>
+      <div style="display:flex; gap:10px;">
+          <button class="btn-action btn-relapse" id="cgDeleteBtn" style="display:none; flex: 0.4;" onclick="askDeleteCustomGoal()"><i data-lucide="trash-2"></i></button>
+          <button class="btn-action btn-primary" style="flex:1;" onclick="saveCustomGoal()">Salvar Meta</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="dayModal">
+    <div class="bottom-sheet">
+      <div class="sheet-handle"></div>
+      <div class="sheet-header">
+        <h2 id="modalDateTitle">Data</h2>
+        <button class="close-btn" onclick="closeModal('dayModal')"><i data-lucide="x" size="20"></i></button>
+      </div>
+
+      <div class="section-lbl"><i data-lucide="zap" size="14"></i> Hábitos Rápidos</div>
+      <div class="chip-grid">
+        <label class="chip-label" id="lblWorkout"><input type="checkbox" id="chkWorkout" onchange="toggleChip(this, 'lblWorkout')"> <i data-lucide="dumbbell" size="16"></i> Treinou</label>
+        <label class="chip-label" id="lblNofap"><input type="checkbox" id="chkNofap" onchange="toggleChip(this, 'lblNofap')"> <i data-lucide="flame" size="16"></i> No PMO</label>
+        <label class="chip-label" id="lblSugar"><input type="checkbox" id="chkSugar" onchange="toggleChip(this, 'lblSugar')"> <i data-lucide="cookie" size="16"></i> S/ Açúcar</label>
+        <label class="chip-label" id="lblMeditate"><input type="checkbox" id="chkMeditate" onchange="toggleChip(this, 'lblMeditate')"> <i data-lucide="brain" size="16"></i> Meditou</label>
+      </div>
+
+      <div class="section-lbl"><i data-lucide="activity" size="14"></i> Corpo & Nutrição</div>
+      <div class="input-grid" style="grid-template-columns: 1fr 1fr;">
+        <div class="input-box"><label>Peso (Kg)</label><input type="number" id="inWeight" step="0.1" inputmode="decimal" placeholder="0.0"></div>
+        <div class="input-box"><label style="color:var(--accent-blue)">Água (Litros)</label><input type="number" id="inWater" step="0.1" inputmode="decimal" placeholder="0.0"></div>
+        <div class="input-box"><label style="color:var(--accent-purple)">Proteína (g)</label><input type="number" id="inProtein" inputmode="numeric" placeholder="0"></div>
+        <div class="input-box"><label style="color:var(--accent-blue)">Cardio (min)</label><input type="number" id="inCardio" inputmode="numeric" placeholder="0"></div>
+        <div class="input-box"><label style="color:var(--accent-green)">Kcal Ingeridas</label><input type="number" id="inCalIn" inputmode="numeric" placeholder="0"></div>
+        <div class="input-box"><label style="color:var(--accent-red)">Kcal Gastas</label><input type="number" id="inCalOut" inputmode="numeric" placeholder="0"></div>
+      </div>
+
+      <div class="section-lbl"><i data-lucide="book-open" size="14"></i> Mente & Diário</div>
+      <div class="input-grid">
+          <div class="input-box"><label>Sono (Horas)</label><input type="number" id="inSleep" step="0.5" inputmode="decimal" placeholder="0.0"></div>
+          <div class="input-box"><label>Páginas Lidas</label><input type="number" id="inReading" inputmode="numeric" placeholder="0"></div>
+      </div>
+      <textarea id="inNotes" class="full-width" rows="2" placeholder="Resumo ou notas do seu dia..."></textarea>
+
+      <div style="display:flex; gap:10px; margin-top: 24px;">
+          <button id="dayModalCloseBtn" class="btn-action" style="background: rgba(255,255,255,0.05); color: var(--text-muted); flex:0.4;" onclick="closeModal('dayModal')">Fechar</button>
+          <button class="btn-action btn-relapse" style="flex:0.4;" id="btnClearDay" onclick="askClearDay()"><i data-lucide="eraser" size="18"></i> Limpar</button>
+          <button class="btn-action btn-primary" style="flex:1;" id="btnSaveDay" onclick="saveDay()">Salvar</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="sosModal">
+    <div class="bottom-sheet sos-sheet">
+      <div class="sheet-handle"></div>
+      <div class="sheet-header sos-header">
+        <h2><i data-lucide="shield-alert" size="24"></i> PROTOCOLO SOS</h2>
+        <button class="close-btn" onclick="closeSOS()"><i data-lucide="x" size="20"></i></button>
+      </div>
+      
+      <div class="breathe-circle" id="breatheCircle">INSPIRE</div>
+      <p style="text-align:center; font-size:11px; opacity:0.6; margin-bottom: 20px;">Sincronize sua respiração. Reduza o cortisol AGORA.</p>
+
+      <div class="card" style="background: rgba(255,255,255,0.01); text-align:center; margin-bottom: 20px;">
+          <div id="sosActionText" style="font-size:15px; font-weight:700; font-style: italic; margin-bottom:12px; color: var(--text-main);">Faça 20 flexões agora.</div>
+          <button class="btn-edit" onclick="rollSOSAction()"><i data-lucide="refresh-cw" size="12" style="display:inline; vertical-align:middle;"></i> Trocar Ação</button>
+      </div>
+
+      <div class="sos-timer" id="sosTimer">10:00</div>
+      
+      <div style="display:flex; gap:10px;">
+          <button class="btn-action" style="background: rgba(255,255,255,0.05); color: #fff;" onclick="stopSOSTimer()">Parar</button>
+          <button class="btn-action" style="background: var(--accent-blue); color: #fff;" id="btnSosStart" onclick="startSOSTimer()">Iniciar 10 Min</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const GROQ_API_KEY = "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"; 
+
+    async function callGroqAI(userPrompt, targetId, btnElement) {
+        const cortexBox = document.getElementById(`cortex-${targetId}`);
+        if (!cortexBox) return;
+
+        if (btnElement) { 
+            btnElement.disabled = true; 
+            btnElement.style.opacity = '0.5'; 
+            btnElement.innerHTML = `<i data-lucide="loader" class="spin" size="12"></i> Gerando...`;
+            lucide.createIcons();
+        }
+
+        cortexBox.innerHTML = `
+            <div class="ia-insight-item" style="padding-bottom: 12px; border-bottom: 1px dashed rgba(255,255,255,0.1); margin-bottom: 8px;">
+                <i data-lucide="loader" class="spin" size="16" style="color: var(--accent-purple);"></i> 
+                <span style="color: var(--accent-purple);"><strong>Lia está analisando profundamente...</strong></span>
+            </div>
+        `;
+        lucide.createIcons();
+
+        try {
+            const systemPrompt = `Você é a "Lia", parceira de trincheira e estrategista de alta performance do usuário. 
+            SUA MISSÃO: Fornecer uma análise TÁTICA, DIRETA e CONCISA.
+            DIRETRIZES DE FORMATAÇÃO ESTRITAS:
+            1. Sua resposta deve ser formada por UM ÚNICO PARÁGRAFO.
+            2. O parágrafo deve ter entre 3 a 5 frases, no máximo. Seja breve e impactante.
+            3. Use **negrito** apenas para a conclusão vital ou o termo técnico mais importante.
+            4. Mantenha a voz humana, motivacional e sofisticada, mas sem enrolação.
+            5. É PROIBIDO dar respostas longas, com mais de um parágrafo ou que não vão direto ao ponto. Nunca diga "olá".`;
+            
+            const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${GROQ_API_KEY}`
+                },
+                body: JSON.stringify({
+                    model: "llama-3.3-70b-versatile",
+                    messages:[
+                        { role: "system", content: systemPrompt },
+                        { role: "user", content: userPrompt }
+                    ],
+                    temperature: 0.7, 
+                    max_tokens: 300 
+                })
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error?.message || "Erro de conexão com a Lia.");
+            }
+
+            const result = await response.json();
+            
+            if (!result.choices || result.choices.length === 0 || !result.choices[0].message || !result.choices[0].message.content) {
+                throw new Error("A Lia retornou uma resposta vazia ou inválida.");
+            }
+            
+            let aiResponseText = result.choices[0].message.content;
+
+            aiResponseText = aiResponseText
+                .replace(/\*\*(.*?)\*\*/g, '<strong style="color: #fff;">$1</strong>')
+                .replace(/\n\n/g, '<br><br>')
+                .replace(/\n/g, ' '); 
+
+            cortexBox.innerHTML = `
+                <div class="ia-insight-item" style="padding-bottom: 12px; border-bottom: 1px dashed rgba(255,255,255,0.1); margin-bottom: 8px; align-items: flex-start;">
+                    <i data-lucide="sparkles" size="16" style="color: var(--accent-purple); margin-top: 2px; flex-shrink: 0;"></i>
+                    <div style="color: var(--text-main); flex: 1; display: flex; flex-direction: column; gap: 4px;">
+                        <strong style="color: var(--accent-purple); font-size: 13px;">Lia</strong>
+                        <div style="line-height: 1.6; font-size: 12.5px;">${aiResponseText}</div>
+                    </div>
+                </div>
+            `;
+            lucide.createIcons();
+
+            if (btnElement) {
+                btnElement.innerHTML = `<i data-lucide="eraser" size="12"></i> Limpar Análise`;
+                btnElement.dataset.action = 'clear';
+                lucide.createIcons();
+            }
+
+        } catch (error) {
+            console.error("Erro na IA:", error);
+            let userFriendlyError = error.message;
+            if (error.message.includes("decommissioned")) userFriendlyError = "O modelo de IA foi descontinuado pelo provedor.";
+            else if (error.message.includes("API key")) userFriendlyError = "A chave da API (GROQ_API_KEY) é inválida ou expirou.";
+
+            cortexBox.innerHTML = `
+                <div class="ia-insight-item" style="color: var(--accent-red); padding-bottom: 12px; border-bottom: 1px dashed rgba(255,255,255,0.1); margin-bottom: 8px;">
+                    <i data-lucide="alert-triangle" size="16"></i> 
+                    <span><strong>Lia perdeu a conexão:</strong> ${userFriendlyError}</span>
+                </div>
+            `;
+             if (btnElement) {
+                btnElement.innerHTML = `<i data-lucide="sparkles" size="12"></i> Tentar de Novo`;
+                btnElement.dataset.action = 'generate';
+                lucide.createIcons();
+            }
+        } finally {
+            if (btnElement) { 
+                btnElement.disabled = false; 
+                btnElement.style.opacity = '1'; 
+            }
+        }
+    }
+
+    let toastTimeout;
+    function showToast(message, icon = 'check-circle', color = 'var(--accent-green)') {
+        const toast = document.getElementById('toast');
+        toast.innerHTML = `<i data-lucide="${icon}" size="16" style="color: ${color};"></i> ${message}`;
+        lucide.createIcons();
+        
+        clearTimeout(toastTimeout);
+        toast.classList.remove('show');
+        
+        setTimeout(() => {
+            toast.classList.add('show');
+            toastTimeout = setTimeout(() => {
+                toast.classList.remove('show');
+            }, 2500); 
+        }, 50);
+    }
+
+    function handleAiButtonClick(btn, generationFuncName) {
+        const action = btn.dataset.action;
+        const card = btn.closest('.ia-card');
+        const targetId = card.querySelector('.ia-insights-list').id;
+        const manualBox = document.getElementById(`manual-${targetId}`);
+
+        if (action === 'generate') { 
+            if(manualBox) manualBox.style.display = 'none'; 
+            if (typeof window[generationFuncName] === 'function') {
+                window[generationFuncName](btn);
+            }
+        } else if (action === 'clear') {
+            const cortexBox = document.getElementById(`cortex-${targetId}`);
+            if (cortexBox) cortexBox.innerHTML = '';
+            if(manualBox) manualBox.style.display = 'flex'; 
+            
+            btn.innerHTML = `<i data-lucide="sparkles" size="12"></i> Falar com Lia`;
+            btn.dataset.action = 'generate';
+            lucide.createIcons();
+        }
+    }
+
+    function triggerGeralAI(btn) {
+        const todayIso = getTodayIso();
+        const eToday = data.entries[todayIso] || {};
+        const streakPmo = document.getElementById('streakPmo').innerText;
+        const streakSugar = document.getElementById('streakSugar').innerText;
+        const sleep = eToday.sleep || "0";
+        const water = eToday.water || "0";
+        const workout = eToday.workout ? "Sim" : "Não";
+        const calIn = eToday.calIn || "0";
+        const calOut = eToday.calOut || "0";
+        const mood = eToday.mood || "Neutro";
+
+        const prompt = `Analise o status do dia: Sono: ${sleep}h, Água: ${water}L, Treino: ${workout}, Calorias: Ingeriu ${calIn} / Gastou ${calOut}, Humor: ${mood}, PMO: ${streakPmo} dias, S/Açúcar: ${streakSugar} dias. Forneça uma análise fisiológica e comportamental focada nos impactos desses números na sua performance e bem-estar geral.`;
+        callGroqAI(prompt, 'aiSummaryList', btn);
+    }
+
+    function triggerResumoAI(btn) {
+        const peso = document.getElementById('resWeightAvg').innerText;
+        const consIn = document.getElementById('resCalInVal').innerText;
+        const gasOut = document.getElementById('resCalOutVal').innerText;
+        const saldo = document.getElementById('resCalNet').innerText;
+        const freqTreino = document.getElementById('resConsistency').innerText;
+        const sonoMed = document.getElementById('resSonoMed').innerText;
+        const aguaMed = document.getElementById('resWaterMed').innerText;
+        const protMed = document.getElementById('resProtMed').innerText;
+        
+        const braco = document.getElementById('resArmVal').innerText.replace('\n', ' ');
+        const barriga = document.getElementById('resBellyVal').innerText.replace('\n', ' ');
+
+        const prompt = `Analise o resumo mensal: Peso: ${peso}, Kcal Ingeridas: ${consIn}, Kcal Gastas: ${gasOut}, Saldo Total: ${saldo}, Proteína Média: ${protMed}, Água Média: ${aguaMed}, Treino: ${freqTreino}, Sono: ${sonoMed}. Medidas Morfológicas Atuais: Braço: ${braco}, Cintura: ${barriga}. Avalie as implicações metabólicas. Foque muito em explicar se houve "Recomposição Corporal", baseando-se no fato de que perder cintura/barriga e manter/ganhar braço enquanto o peso oscila pouco é o cenário ideal. Dê o veredito se ele está ganhando massa, perdendo gordura ou ambos.`;
+        callGroqAI(prompt, 'aiResumoList', btn);
+    }
+
+    function triggerEnergyTodayAI(btn) {
+        const todayIso = getTodayIso();
+        const score = document.getElementById('energyTodayVal').innerText;
+        const mood = (data.entries[todayIso] || {}).mood || "Neutro";
+        const sleep = (data.entries[todayIso] || {}).sleep || "0";
+        const water = (data.entries[todayIso] || {}).water || "0";
+        
+        const prompt = `Calibração Diária de Energia: Score: ${score}, Sono: ${sleep}h, Água: ${water}L, Humor: ${mood}. Interprete esses dados e ofereça estratégias diretas para otimizar a função cerebral e a performance física HOJE.`;
+        callGroqAI(prompt, 'aiEnergyTodayList', btn);
+    }
+
+    function triggerEnergyMonthAI(btn) {
+        const freq = document.getElementById('energyMonthConsistency').innerText;
+        const prompt = `Análise de Ciclo Mensal: Consistência de hábitos: ${freq}. Descreva o impacto a longo prazo dessa consistência na sua reserva energética, na resiliência mental e nos processos neuroquímicos do cérebro.`;
+        callGroqAI(prompt, 'aiEnergyMonthList', btn);
+    }
+
+    function triggerTreinoAI(btn) {
+        let wpText = "";
+        for(let i=0; i<7; i++) {
+            let p = data.workoutPlan[i];
+            if(p && p.isRest) wpText += `Dia ${i+1}: Descanso. `;
+            else if(p && p.exercises && p.exercises.length > 0) {
+                let exNomes = p.exercises.map(e => e.name).join(", ");
+                wpText += `Dia ${i+1} (${p.title || 'Treino'}): ${exNomes}. `;
+            }
+        }
+        if(!wpText || wpText.trim() === "") wpText = "Sem treinos cadastrados.";
+
+        const prompt = `Análise da Rotina Semanal de Treinos: ${wpText}. Atue como um treinador militar de alto nível. Identifique deficiências na periodização, falta de variação biomecânica ou grupos musculares negligenciados, e proponha ajustes para maximizar a sobrecarga progressiva e o desenvolvimento integral.`;
+        callGroqAI(prompt, 'aiWorkoutList', btn);
+    }
+
+    lucide.createIcons();
+
+    const manifestContent = {
+        "name": "Planner Elite Pro",
+        "short_name": "Planner",
+        "description": "Seu sistema de produtividade",
+        "start_url": window.location.href,
+        "display": "standalone",
+        "background_color": "#050b14",
+        "theme_color": "#050b14",
+        "icons":[{
+            "src": "https://i.imgur.com/5S5aZ4c.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "any maskable"
+        }]
+    };
+    const manifestBlob = new Blob([JSON.stringify(manifestContent)], {type: 'application/json'});
+    document.getElementById('manifest-link').href = URL.createObjectURL(manifestBlob);
+
+    let deferredPrompt;
+    window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault(); 
+        deferredPrompt = e;
+        const btnInstall = document.getElementById('btn-install');
+        if(btnInstall) btnInstall.style.display = 'block';
+    });
+
+    function installPWA() {
+        if (deferredPrompt) {
+            deferredPrompt.prompt();
+            deferredPrompt.userChoice.then((choiceResult) => {
+                if (choiceResult.outcome === 'accepted') {
+                    const btnInstall = document.getElementById('btn-install');
+                    if(btnInstall) btnInstall.style.display = 'none';
+                }
+                deferredPrompt = null;
+            });
+        } else {
+            alert("Para instalar no seu celular: Toque nos 3 pontinhos do navegador e escolha 'Adicionar à tela inicial'.");
+        }
+    }
+
+    const XP_BASE = 1000;
+    const XP_GROWTH_FACTOR = 1.2;
+    const DEFAULT_GOALS = { workouts: 20, reading: 200, sleep: 7, targetArm: 40.0, targetBelly: 80.0 };
+    const DEFAULT_EXP = { workout: 100, reading_pag: 2, pmo_day: 50, sugar_day: 20, meditate: 40, sleep_base: 30 };
+    const DEFAULT_SETTINGS = { basal: 1900, initialWeight: 0, height: 0, age: 0, initialArm: 0, initialBelly: 0, appStartDate: null, expBalance: DEFAULT_EXP };
+    const WEEKDAYS =["Segunda-feira", "Terça-feira", "Quarta-feira", "Quinta-feira", "Sexta-feira", "Sábado", "Domingo"];
+    
+    const ACHIEVEMENT_TRACKS =[
+        { id: 'level', name: 'Nível RPG', icon: 'chevrons-up', tiers:[ {t:5, n:'Despertar', c:'#94a3b8'}, {t:10, n:'Iniciado', c:'var(--accent-green)'}, {t:25, n:'Veterano', c:'var(--accent-blue)'}, {t:50, n:'Mestre', c:'var(--accent-purple)'}, {t:80, n:'Lenda', c:'var(--accent-amber)'}, {t:100, n:'Olimpo', c:'var(--accent-red)'} ] },
+        { id: 'workout', name: 'Treinos', icon: 'dumbbell', tiers:[ {t:10, n:'Iniciante', c:'#94a3b8'}, {t:50, n:'Atleta', c:'var(--accent-green)'}, {t:100, n:'Guerreiro', c:'var(--accent-blue)'}, {t:250, n:'Titã', c:'var(--accent-purple)'}, {t:500, n:'Hércules', c:'var(--accent-amber)'}, {t:1000, n:'Imortal', c:'var(--accent-red)'} ] },
+        { id: 'pmo', name: 'Retenção', icon: 'shield', tiers:[ {t:7, n:'Controle', c:'#94a3b8'}, {t:14, n:'Foco', c:'var(--accent-green)'}, {t:30, n:'Domínio', c:'var(--accent-blue)'}, {t:90, n:'Renascimento', c:'var(--accent-purple)'}, {t:180, n:'Ascensão', c:'var(--accent-amber)'}, {t:365, n:'Monge', c:'var(--accent-red)'} ] },
+        { id: 'reading', name: 'Leitura', icon: 'book-open', tiers:[ {t:500, n:'Estudante', c:'#94a3b8'}, {t:2000, n:'Erudito', c:'var(--accent-green)'}, {t:5000, n:'Sábio', c:'var(--accent-blue)'}, {t:10000, n:'Mestre', c:'var(--accent-purple)'}, {t:20000, n:'Oráculo', c:'var(--accent-amber)'}, {t:50000, n:'Onisciente', c:'var(--accent-red)'} ] },
+        { id: 'sugar', name: 'S/ Açúcar', icon: 'cookie', tiers:[ {t:7, n:'Limpeza', c:'#94a3b8'}, {t:14, n:'Paladar', c:'var(--accent-green)'}, {t:30, n:'Alquimista', c:'var(--accent-blue)'}, {t:90, n:'Puro', c:'var(--accent-purple)'}, {t:180, n:'Blindado', c:'var(--accent-amber)'}, {t:365, n:'Soberano', c:'var(--accent-red)'} ] },
+        { id: 'meditate', name: 'Meditações', icon: 'brain', tiers:[ {t:10, n:'Atenção', c:'#94a3b8'}, {t:50, n:'Presença', c:'var(--accent-green)'}, {t:100, n:'Foco Real', c:'var(--accent-blue)'}, {t:250, n:'Zen', c:'var(--accent-purple)'}, {t:500, n:'Nirvana', c:'var(--accent-amber)'}, {t:1000, n:'Iluminado', c:'var(--accent-red)'} ] }
+    ];
+
+    window.currentRPGLevel = 1;
+
+    function getTodayIso() {
+        return new Date().toLocaleDateString('en-CA');
+    }
+    
+    let data = JSON.parse(localStorage.getItem('planner_elite_p_v6')) || {};
+    if(!data.entries) data.entries = {};
+    if(!data.settings) data.settings = DEFAULT_SETTINGS;
+    if(!data.settings.expBalance) data.settings.expBalance = DEFAULT_EXP;
+    if(!data.goals) data.goals = DEFAULT_GOALS;
+    if(!data.goals.targetArm) data.goals.targetArm = 40.0;
+    if(!data.goals.targetBelly) data.goals.targetBelly = 80.0;
+    if(!data.customGoals) data.customGoals =[];
+    if(!data.evaluations) data.evaluations =[];
+    
+    if(!data.workoutPlan || Array.isArray(data.workoutPlan) || typeof data.workoutPlan === 'string') {
+        let newWp = {};
+        for(let i=0; i<7; i++) {
+            let old = data.workoutPlan ? data.workoutPlan[i] : null;
+            newWp[i] = { title: '', isRest: false, exercises: Array.isArray(old) ? old :[] };
+        }
+        data.workoutPlan = newWp;
+    }
+
+    let curMonth = new Date().getMonth();
+    let curYear = new Date().getFullYear();
+    
+    if(!data.settings.appStartDate) {
+        data.settings.appStartDate = getTodayIso();
+        saveData();
+    }
+
+    let currentTabIndex = 0;
+    let selectedDate = null;
+    const tabs =['geral', 'resumo', 'metas', 'energia', 'treinos'];
+    let energyChartInstance = null;
+    let morphChartInstance = null;
+    let currentEnergyView = 'today';
+    let tempWorkoutPlan =[]; 
+    let expandedExIdx = -1; 
+    let editingExIdx = -1;
+    let sosTimerInterval = null, breatheInterval = null;
+
+    function autoSaveWorkout() {
+        const id = document.getElementById('wpDayId').value;
+        const title = document.getElementById('wpDayTitleInput').value;
+        const isRest = document.getElementById('btnToggleRest').innerText === "Remover Descanso";
+        data.workoutPlan[id] = { title: title, isRest: isRest, exercises: tempWorkoutPlan };
+        saveData();
+        renderWorkoutPlan(); 
+        generateManualWorkoutInsights();
+    }
+
+    const RPG_CLASSES = { 
+        str: { name: "O Espartano", icon: "swords", color: "var(--accent-red)", bg: "linear-gradient(135deg, #7f1d1d, #ef4444)", req: "Domínio no físico. Ganho focado em Treinos e Cardio.", 
+               tiers:[{lvl: 1, name: "Iniciante", rar: "Comum", c: "#94a3b8"}, {lvl: 10, name: "Gladiador", rar: "Incomum", c: "#10b981"}, {lvl: 25, name: "Centurião", rar: "Raro", c: "#3b82f6"}, {lvl: 50, name: "General", rar: "Épico", c: "#8b5cf6"}, {lvl: 80, name: "Lenda", rar: "Lendário", c: "#f59e0b"}], quotes:['"A disciplina é a forja do guerreiro."', '"O suor poupa o sangue na batalha."', '"A dor é temporária, a glória é eterna."', '"Nenhum recuo. Nenhuma rendição."', '"Você se tornou a própria fúria."'] },
+        int: { name: "O Estrategista", icon: "book-open", color: "var(--accent-blue)", bg: "linear-gradient(135deg, #1e3a8a, #3b82f6)", req: "Domínio mental. Ganho massivo focado em Páginas Lidas.",
+               tiers:[{lvl: 1, name: "Aprendiz", rar: "Comum", c: "#94a3b8"}, {lvl: 10, name: "Erudito", rar: "Incomum", c: "#10b981"}, {lvl: 25, name: "Arquiteto", rar: "Raro", c: "#3b82f6"}, {lvl: 50, name: "Mestre", rar: "Épico", c: "#8b5cf6"}, {lvl: 80, name: "Onisciente", rar: "Lendário", c: "#f59e0b"}], quotes:['"O conhecimento é o início da jornada."', '"Uma mente afiada corta mais que espadas."', '"Você prevê os movimentos antes que ocorram."', '"O caos se curva à sua lógica."', '"Você enxerga a matrix da realidade."'] },
+        wis: { name: "O Estoico", icon: "mountain", color: "var(--accent-purple)", bg: "linear-gradient(135deg, #4c1d95, #8b5cf6)", req: "Domínio do espírito. Foco em Sem PMO, Sem Açúcar e Meditação.",
+               tiers:[{lvl: 1, name: "Acólito", rar: "Comum", c: "#94a3b8"}, {lvl: 10, name: "Monge", rar: "Incomum", c: "#10b981"}, {lvl: 25, name: "Sábio", rar: "Raro", c: "#3b82f6"}, {lvl: 50, name: "Mestre Zen", rar: "Épico", c: "#8b5cf6"}, {lvl: 80, name: "Iluminado", rar: "Lendário", c: "#f59e0b"}], quotes:['"Aceite o que não pode ser mudado."', '"Seja a rocha em meio à tempestade."', '"Você domina seus impulsos."', '"Sua mente é um lago inabalável."', '"Nada o atinge. Você é a própria paz."'] },
+        vit: { name: "O Titã", icon: "shield-plus", color: "var(--accent-green)", bg: "linear-gradient(135deg, #064e3b, #10b981)", req: "Domínio da recuperação. Foco em dormir 7+ horas com consistência.",
+               tiers:[{lvl: 1, name: "Vigilante", rar: "Comum", c: "#94a3b8"}, {lvl: 10, name: "Protetor", rar: "Incomum", c: "#10b981"}, {lvl: 25, name: "Colosso", rar: "Raro", c: "#3b82f6"}, {lvl: 50, name: "Guardião", rar: "Épico", c: "#8b5cf6"}, {lvl: 80, name: "Imortal", rar: "Lendário", c: "#f59e0b"}], quotes:['"A saúde é a sua primeira riqueza."', '"Suas raízes estão profundas e fortes."', '"Um corpo de aço, vontade de ferro."', '"Você é a muralha intransponível."', '"Sua vitalidade transcende limites."'] },
+        balanced: { name: "O Soberano", icon: "crown", color: "var(--accent-amber)", bg: "linear-gradient(135deg, #78350f, #f59e0b)", req: "Domínio absoluto. Requer evolução consistente em todas as áreas simultaneamente.",
+               tiers:[{lvl: 1, name: "Nobre", rar: "Comum", c: "#94a3b8"}, {lvl: 10, name: "Cavaleiro", rar: "Incomum", c: "#10b981"}, {lvl: 25, name: "Lorde", rar: "Raro", c: "#3b82f6"}, {lvl: 50, name: "Rei", rar: "Épico", c: "#8b5cf6"}, {lvl: 80, name: "Imperador", rar: "Lendário", c: "#f59e0b"}], quotes:['"O equilíbrio é a chave do reinado."', '"Você lidera pelo exemplo."', '"Sua disciplina coroa suas ações."', '"Você governa seu próprio destino."', '"Sua lenda ecoará pela eternidade."'] }
+    };
+    
+setInterval(() => {
+    const now = new Date();
+    document.getElementById('digitalClock').innerText = now.getHours().toString().padStart(2,'0') + ':' + now.getMinutes().toString().padStart(2,'0');
+}, 1000);
+
+function init() {
+    checkDailyMood();
+    loadSettingsInputs();
+    initSwipe(); 
+    renderCodex(); 
+    renderWorkoutPlan();
+    render();
+    generateManualWorkoutInsights();
+}
+
+    function toggleAICard(btnElement) {
+        const header = btnElement.closest('.ia-header');
+        const insightList = header.nextElementSibling;
+        insightList.classList.toggle('collapsed');
+        btnElement.classList.toggle('active');
+    }
+
+    function initSwipe() {
+        let touchStartX = 0; let touchEndX = 0;
+        const container = document.getElementById('appContainer');
+        container.addEventListener('touchstart', e => { touchStartX = e.changedTouches[0].screenX; }, {passive: true});
+        container.addEventListener('touchend', e => { touchEndX = e.changedTouches[0].screenX; handleSwipe(); }, {passive: true});
+        function handleSwipe() { 
+            if(document.querySelector('.modal-overlay.open')) return; 
+            const threshold = 60; 
+            if (touchEndX < touchStartX - threshold) { if (currentTabIndex < 4) switchTab(tabs[++currentTabIndex], currentTabIndex); } 
+            if (touchEndX > touchStartX + threshold) { if (currentTabIndex > 0) switchTab(tabs[--currentTabIndex], currentTabIndex); } 
+        }
+    }
+    
+    function switchTab(tabId, index) { 
+        currentTabIndex = index; 
+        document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active')); 
+        document.querySelectorAll('.view-section').forEach(view => view.classList.remove('active')); 
+        document.getElementById(`tab-${index}`).classList.add('active'); 
+        document.getElementById(`view-${tabId}`).classList.add('active'); 
+        if(tabId === 'geral' || tabId === 'resumo') render(); 
+        if(tabId === 'energia') renderEnergy();
+        if(tabId === 'treinos') generateManualWorkoutInsights();
+    }
+
+    document.querySelectorAll('.modal-overlay').forEach(modal => { 
+        modal.addEventListener('click', (e) => { 
+            if (e.target === modal) closeModal(modal.id); 
+        }); 
+    });
+
+    let confirmActionHandler = null;
+    function openConfirmModal(title, text, okBtnText, onOkAction) {
+        document.getElementById('confirmTitle').innerText = title;
+        document.getElementById('confirmMsg').innerText = text;
+        const okBtn = document.getElementById('confirmOkBtn');
+        okBtn.innerText = okBtnText;
+        confirmActionHandler = onOkAction;
+        openModal('confirmModal');
+    }
+    function closeConfirmModal() { closeModal('confirmModal'); confirmActionHandler = null; }
+    function executeConfirm() { if(confirmActionHandler) confirmActionHandler(); closeConfirmModal(); }
+
+    function askRelapse() { openConfirmModal("Registrar Falha?", "Isso irá resetar seu streak sem PMO para zero.", "Confirmar Derrota", doRelapse); }
+    
+    function doRelapse() { 
+        const todayIso = getTodayIso();
+        if (!data.entries[todayIso]) data.entries[todayIso] = {};
+        data.entries[todayIso].sem_pmo = false; 
+        saveData(); 
+        showToast('Falha registrada. Ciclo reiniciado.', 'alert-triangle', 'var(--accent-red)');
+        render(); 
+    }
+    
+    function askClearDay() { openConfirmModal("Limpar Registro?", "Isto apagará todos os dados deste dia.", "Limpar Tudo", () => { delete data.entries[selectedDate]; saveData(); showToast('Registro do dia limpo', 'trash-2', 'var(--accent-red)'); closeModal('dayModal'); render(); }); }
+    function askDeleteCustomGoal() { openConfirmModal("Excluir Meta?", "Esta meta e o progresso dela serão apagados.", "Excluir", () => { const id = document.getElementById('cgId').value; data.customGoals = data.customGoals.filter(x => x.id != id); saveData(); showToast('Meta pessoal removida', 'trash-2', 'var(--accent-red)'); closeModal('customGoalModal'); render(); }); }
+
+    function checkDailyMood() { if (localStorage.getItem('planner_last_mood_date') !== new Date().toLocaleDateString('pt-BR')) { openModal('moodModal'); } }
+    function registerMood(moodValue) { const todayIso = getTodayIso(); if (!data.entries[todayIso]) data.entries[todayIso] = {}; data.entries[todayIso].mood = moodValue; localStorage.setItem('planner_last_mood_date', new Date().toLocaleDateString('pt-BR')); saveData(); showToast('Status salvo'); closeModal('moodModal'); render(); }
+
+    function buildInsightsHTML(insightsArray) {
+        return insightsArray.map(i => `
+            <div class="ia-insight-item">
+                <i data-lucide="${i.icon}" size="16" style="color: ${i.color};"></i>
+                <span>${i.text}</span>
+            </div>
+        `).join('');
+    }
+
+    function generateManualGeralAndResumoAI(workouts, avgSleep, pmoStr, sugStr, calInTotal, calOutTotal, basalAccumulated, weightDiff, totalProtein, proteinDays) {
+        const todayIso = getTodayIso();
+        const eToday = data.entries[todayIso] || {};
+        let daysInMonth = new Date(curYear, curMonth + 1, 0).getDate();
+        let curDayPassed = (curYear === new Date().getFullYear() && curMonth === new Date().getMonth()) ? new Date().getDate() : daysInMonth;
+
+        const aiGeralEl = document.getElementById('manual-aiSummaryList');
+        const aiCardGeral = document.getElementById('aiSummaryCard');
+        if (aiGeralEl && aiCardGeral && currentTabIndex === 0) {
+            aiCardGeral.style.display = 'flex';
+            let insightsGeral =[];
+            
+            if (pmoStr > 21) insightsGeral.push({ icon: 'brain', color: 'var(--accent-green)', text: `<strong>Retenção Avançada (${pmoStr} dias):</strong> Receptores dopaminérgicos estabilizados. Foco e vitalidade em alta constante.` });
+            else if (pmoStr > 7) insightsGeral.push({ icon: 'shield', color: 'var(--accent-blue)', text: `<strong>Desintoxicação (${pmoStr} dias):</strong> O nevoeiro mental está dissipando. Mantenha os gatilhos isolados.` });
+            else insightsGeral.push({ icon: 'alert-triangle', color: 'var(--accent-red)', text: `<strong>Sistema Comprometido:</strong> Choque dopaminérgico recente. Redirecione o foco para tarefas mecânicas hoje.` });
+
+            if (eToday && eToday.workout) {
+                insightsGeral.push({ icon: 'activity', color: 'var(--accent-green)', text: '<strong>Status Físico:</strong> Treino concluído, fluxo de oxigênio garantido.' });
+            } else {
+                 insightsGeral.push({ icon: 'activity', color: 'var(--accent-amber)', text: '<strong>Status Físico:</strong> Corpo sedentário hoje. O movimento é vital para o ciclo circadiano.' });
+            }
+
+            let waterVal = parseFloat(eToday?.water || 0);
+            if(waterVal >= 2.5) {
+                insightsGeral.push({ icon: 'droplet', color: 'var(--accent-blue)', text: `<strong>Hidratação Excelente (${waterVal.toFixed(1)}L):</strong> Suporte celular e cognitivo maximizado.` });
+            } else if (waterVal >= 2.0) {
+                insightsGeral.push({ icon: 'droplet', color: 'var(--accent-green)', text: `<strong>Hidratação Adequada (${waterVal.toFixed(1)}L):</strong> Seu corpo tem os fluidos básicos para operar bem.` });
+            } else if (waterVal > 0) {
+                insightsGeral.push({ icon: 'droplet', color: 'var(--accent-amber)', text: `<strong>Hidratação Baixa (${waterVal.toFixed(1)}L):</strong> Beba mais água nas próximas horas para evitar fadiga mental.` });
+            } else {
+                insightsGeral.push({ icon: 'droplet', color: 'var(--accent-red)', text: `<strong>Alerta Crítico de Desidratação (0L):</strong> Risco altíssimo de letargia e névoa mental. Beba água imediatamente.` });
+            }
+            
+            let readingVal = parseInt(eToday?.reading || 0);
+            if(readingVal >= 10) {
+                insightsGeral.push({ icon: 'book-open', color: 'var(--accent-purple)', text: `<strong>Estímulo Cognitivo:</strong> Leitura de ${readingVal} páginas concluída.` });
+            } else {
+                 insightsGeral.push({ icon: 'book-open', color: 'var(--text-muted)', text: '<strong>Estímulo Cognitivo:</strong> Nenhuma leitura registrada hoje.' });
+            }
+
+            aiGeralEl.innerHTML = buildInsightsHTML(insightsGeral);
+        }
+
+        const aiResumoEl = document.getElementById('manual-aiResumoList');
+        const aiResumoCard = document.getElementById('aiResumoCard');
+        if (aiResumoEl && aiResumoCard && currentTabIndex === 1) {
+            aiResumoCard.style.display = 'flex';
+            let insightsResumo =[];
+            let avgSaldo = curDayPassed > 0 ? (calInTotal - (basalAccumulated + calOutTotal)) / curDayPassed : 0;
+            let protVal = (proteinDays > 0) ? (totalProtein/proteinDays) : 0;
+            
+            if (avgSaldo < -200) {
+                 insightsResumo.push({ icon: 'flame', color: 'var(--accent-green)', text: `<strong>Déficit de ${Math.abs(avgSaldo).toFixed(0)} kcal:</strong> Estado catabólico focado na queima lipídica.` });
+            } else if (avgSaldo > 200) {
+                insightsResumo.push({ icon: 'cookie', color: 'var(--accent-amber)', text: `<strong>Superávit de ${avgSaldo.toFixed(0)} kcal:</strong> Ambiente anabólico criado.` });
+            } else {
+                insightsResumo.push({ icon: 'scale', color: 'var(--accent-blue)', text: `<strong>Manutenção Calórica:</strong> Balanço energético neutro.` });
+            }
+            
+            if (protVal > 120) {
+                insightsResumo.push({ icon: 'beef', color: 'var(--accent-purple)', text: `<strong>Proteína Alta (${protVal.toFixed(0)}g):</strong> Ingestão ideal para blindar a massa magra.` });
+            } else {
+                insightsResumo.push({ icon: 'alert-triangle', color: 'var(--accent-red)', text: `<strong>Proteína Baixa (${protVal.toFixed(0)}g):</strong> Alerta de risco para catabolismo muscular.` });
+            }
+
+            let consistency = curDayPassed > 0 ? Math.round((workouts / curDayPassed) * 100) : 0;
+            if (consistency >= 75) {
+                insightsResumo.push({ icon: 'trending-up', color: 'var(--accent-green)', text: `<strong>Consistência de ${consistency}%:</strong> Engajamento atlético exemplar.` });
+            } else {
+                insightsResumo.push({ icon: 'trending-down', color: 'var(--accent-amber)', text: `<strong>Aderência de ${consistency}%:</strong> Frequência de treino muito baixa.` });
+            }
+            
+            if(avgSleep >= 7) {
+                insightsResumo.push({ icon: 'moon', color: 'var(--accent-blue)', text: `<strong>Sono Regulado (${avgSleep}h):</strong> Recuperação neurológica preservada.` });
+            } else {
+                insightsResumo.push({ icon: 'moon', color: 'var(--accent-red)', text: `<strong>Sono Irregular (${avgSleep}h):</strong> Falta de sono elevará seu cortisol basal.` });
+            }
+
+            aiResumoEl.innerHTML = buildInsightsHTML(insightsResumo);
+        }
+        lucide.createIcons();
+    }
+
+    function getTrendBadgeHTML(diff, unit, isInverseGood = false) {
+        if(diff === 0 || isNaN(diff)) return `<div class="trend-badge trend-neutral"><i data-lucide="minus" size="14"></i></div>`;
+        let sign = diff > 0 ? '+' : '';
+        let absDiff = Math.abs(diff).toFixed(1);
+        let isGood = isInverseGood ? (diff < 0) : (diff > 0);
+        let icon = diff > 0 ? 'trending-up' : 'trending-down';
+        let colorClass = isGood ? 'trend-up' : 'trend-down';
+        return `<div class="trend-badge ${colorClass}"><i data-lucide="${icon}" size="14"></i> ${sign}${absDiff} ${unit}</div>`;
+    }
+
+    // ==== LÓGICA DE TREINOS COM DRAG DOS EXERCÍCIOS ====
+
+    function renderWorkoutPlan() {
+        const container = document.getElementById('workoutPlanContainer');
+        container.innerHTML = '';
+        
+        WEEKDAYS.forEach((dayName, idx) => {
+            const planObj = data.workoutPlan[idx] || { title: '', isRest: false, exercises:[] };
+            
+            let contentHtml = '';
+            if (planObj.isRest) {
+                contentHtml = `<div class="w-day-desc" style="color: var(--accent-green);">🛋️ Descanso</div>`;
+            } else if (planObj.title) {
+                contentHtml = `<div class="w-day-desc" style="color: var(--accent-blue);">${planObj.title}</div>`;
+            } else if (planObj.exercises && planObj.exercises.length > 0) {
+                contentHtml = `<div class="w-day-desc" style="color: var(--accent-blue);">Treino de ${planObj.exercises.length} exercícios</div>`;
+            } else {
+                contentHtml = `<div class="w-day-empty">Descanso ou treino não definido...</div>`;
+            }
+            
+            const div = document.createElement('div');
+            div.className = 'workout-day-card';
+            div.onclick = function() { openWorkoutPlanModal(idx, dayName); };
+
+            div.innerHTML = `
+                <div class="w-day-name">${dayName}</div>
+                ${contentHtml}
+            `;
+            container.appendChild(div);
+        });
+
+        lucide.createIcons();
+    }
+
+    function openWorkoutPlanModal(dayId, dayName) {
+        document.getElementById('wpDayId').value = dayId;
+        document.getElementById('wpModalTitle').innerText = dayName;
+        
+        const planObj = data.workoutPlan[dayId] || { title: '', isRest: false, exercises:[] };
+        document.getElementById('wpDayTitleInput').value = planObj.title || '';
+        
+        tempWorkoutPlan = JSON.parse(JSON.stringify(planObj.exercises ||[]));
+        expandedExIdx = -1; 
+        
+        const btnToggleRest = document.getElementById('btnToggleRest');
+        if(planObj.isRest) {
+            btnToggleRest.innerText = "Remover Descanso";
+            btnToggleRest.style.color = "var(--accent-amber)";
+        } else {
+            btnToggleRest.innerText = "Marcar Descanso";
+            btnToggleRest.style.color = "var(--accent-green)";
+        }
+
+        closeExerciseForm(); 
+        renderExerciseList();
+        openModal('workoutPlanModal');
+    }
+
+    // Modal para Escolher de Qual Dia Copiar
+    function openCopyWorkoutModal() {
+        const list = document.getElementById('copyDayList');
+        list.innerHTML = '';
+        const currentDayId = document.getElementById('wpDayId').value;
+
+        WEEKDAYS.forEach((dayName, idx) => {
+            if (idx == currentDayId) return; // Não listar o dia atual
+            
+            const planObj = data.workoutPlan[idx] || { title: '', isRest: false, exercises:[] };
+            
+            let desc = "Vazio";
+            if(planObj.isRest) desc = "Descanso";
+            else if(planObj.title) desc = planObj.title;
+            else if(planObj.exercises && planObj.exercises.length > 0) desc = `${planObj.exercises.length} exercícios`;
+
+            const btn = document.createElement('button');
+            btn.className = 'btn-action';
+            btn.style.background = 'rgba(255,255,255,0.05)';
+            btn.style.color = 'var(--text-main)';
+            btn.style.justifyContent = 'space-between';
+            btn.style.padding = '12px 16px';
+            btn.innerHTML = `<span>${dayName}</span> <span style="font-size:11px; color:var(--text-muted);">${desc}</span>`;
+            btn.onclick = () => confirmCopyWorkout(idx);
+            list.appendChild(btn);
+        });
+        
+        openModal('copyWorkoutModal');
+    }
+
+    function confirmCopyWorkout(sourceId) {
+        const sourcePlan = data.workoutPlan[sourceId];
+        if(sourcePlan) {
+            tempWorkoutPlan = JSON.parse(JSON.stringify(sourcePlan.exercises ||[]));
+            document.getElementById('wpDayTitleInput').value = sourcePlan.title || '';
+            
+            const btnToggleRest = document.getElementById('btnToggleRest');
+            if(sourcePlan.isRest) {
+                btnToggleRest.innerText = "Remover Descanso";
+                btnToggleRest.style.color = "var(--accent-amber)";
+            } else {
+                btnToggleRest.innerText = "Marcar Descanso";
+                btnToggleRest.style.color = "var(--accent-green)";
+            }
+            
+            renderExerciseList();
+            autoSaveWorkout();
+            showToast("Treino copiado com sucesso!");
+        }
+        closeModal('copyWorkoutModal');
+    }
+    
+    function openNewExerciseForm() {
+        editingExIdx = -1;
+        clearWorkoutInputs();
+        document.getElementById('wpAddBtn').innerText = "Salvar e Fechar";
+        document.getElementById('wpAddAndNewBtn').style.display = "flex";
+        
+        const form = document.getElementById('wpAddFormContainer');
+        const list = document.getElementById('wpExerciseList');
+        
+        list.parentNode.insertBefore(form, list.nextSibling); 
+        form.style.display = 'block';
+        
+        setTimeout(() => form.scrollIntoView({ behavior: 'smooth', block: 'center' }), 50);
+    }
+
+    function closeExerciseForm() {
+        const form = document.getElementById('wpAddFormContainer');
+        const list = document.getElementById('wpExerciseList');
+        
+        form.style.display = 'none';
+        list.parentNode.insertBefore(form, list.nextSibling); 
+        
+        editingExIdx = -1;
+        clearWorkoutInputs();
+    }
+    
+    function toggleRestDay() {
+        const id = document.getElementById('wpDayId').value;
+        const btnToggleRest = document.getElementById('btnToggleRest');
+        
+        if(btnToggleRest.innerText === "Marcar Descanso") {
+            tempWorkoutPlan =[];
+            document.getElementById('wpDayTitleInput').value = 'Descanso';
+            btnToggleRest.innerText = "Remover Descanso";
+            btnToggleRest.style.color = "var(--accent-amber)";
+            renderExerciseList();
+        } else {
+            document.getElementById('wpDayTitleInput').value = '';
+            btnToggleRest.innerText = "Marcar Descanso";
+            btnToggleRest.style.color = "var(--accent-green)";
+        }
+        autoSaveWorkout();
+    }
+
+    function clearWorkoutInputs() {
+        document.getElementById('wpExName').value = '';
+        document.getElementById('wpExSets').value = '3';
+        document.getElementById('wpExReps').value = '10';
+        document.getElementById('wpExWeight').value = '';
+    }
+
+    function toggleExpandEx(idx) {
+        if(expandedExIdx === idx) expandedExIdx = -1; 
+        else expandedExIdx = idx;
+        
+        closeExerciseForm(); 
+        renderExerciseList();
+    }
+
+    function getExTrendIcon(ex) {
+        let currentW = parseFloat(ex.weight) || 0;
+        let baseW = parseFloat(ex.baseWeight);
+        if (isNaN(baseW)) baseW = currentW;
+        if (currentW === 0 && baseW === 0) return `<div class="trend-badge trend-neutral"><i data-lucide="minus" size="14"></i></div>`;
+        let diff = currentW - baseW;
+        let sign = diff > 0 ? '+' : '';
+        if (diff > 0) return `<div class="trend-badge trend-up" style="padding: 4px 6px;"><i data-lucide="trending-up" size="14"></i> ${sign}${diff}kg</div>`;
+        if (diff < 0) return `<div class="trend-badge trend-down" style="padding: 4px 6px;"><i data-lucide="trending-down" size="14"></i> ${diff}kg</div>`;
+        return `<div class="trend-badge trend-neutral"><i data-lucide="minus" size="14"></i> =</div>`;
+    }
+
+    function renderExerciseList() {
+        const list = document.getElementById('wpExerciseList');
+        const form = document.getElementById('wpAddFormContainer');
+        
+        // Garante que o form não seja arrastado acidentalmente (fica de fora da lista)
+        if (form.parentNode === list) {
+            list.parentNode.insertBefore(form, list.nextSibling);
+        }
+
+        list.innerHTML = '';
+        if(tempWorkoutPlan.length === 0) {
+            list.innerHTML = '<div style="font-size:12px; color:var(--text-muted); text-align:center; padding:10px;">Nenhum exercício adicionado.</div>';
+            return;
+        }
+        
+        tempWorkoutPlan.forEach((ex, idx) => {
+            let weightStr = ex.weight ? `${ex.weight}kg` : 'Livre';
+            const isExpanded = (expandedExIdx === idx);
+            const div = document.createElement('div');
+            div.className = 'ex-card';
+            
+            let actionsHtml = '';
+            if (isExpanded) {
+                actionsHtml = `
+                <div class="ex-actions">
+                    <button class="btn-edit" style="background: rgba(239,68,68,0.1); color: var(--accent-red); flex: 1; justify-content: center;" onclick="decreaseWeight(event, ${idx})"><i data-lucide="arrow-down" size="14"></i> -1kg</button>
+                    <button class="btn-edit" style="background: rgba(16,185,129,0.1); color: var(--accent-green); flex: 1; justify-content: center;" onclick="increaseWeight(event, ${idx})"><i data-lucide="arrow-up" size="14"></i> +1kg</button>
+                    <button class="btn-edit" style="background: rgba(59,130,246,0.1); color: var(--accent-blue); flex: 1; justify-content: center;" onclick="editExercise(event, ${idx})"><i data-lucide="edit-2" size="14"></i></button>
+                    <button class="btn-edit" style="background: rgba(255,255,255,0.05); color: var(--text-muted); padding: 8px;" onclick="removeExerciseFromPlan(event, ${idx})"><i data-lucide="trash-2" size="14"></i></button>
+                </div>`;
+            }
+            
+            div.innerHTML = `
+                <div class="ex-card-header" onclick="toggleExpandEx(${idx})">
+                    <div style="display:flex; align-items:center; gap: 10px;">
+                        <i data-lucide="grip-vertical" size="16" class="ex-drag-handle" style="color:var(--text-muted); opacity:0.5; cursor:grab;" onclick="event.stopPropagation()"></i>
+                        <div>
+                            <div class="ex-card-title">${ex.name}</div>
+                            <div class="ex-card-sub">${ex.sets} séries • ${ex.reps} reps • <strong>${weightStr}</strong></div>
+                        </div>
+                    </div>
+                    ${getExTrendIcon(ex)}
+                </div>
+                ${actionsHtml}
+            `;
+            list.appendChild(div);
+        });
+        lucide.createIcons();
+
+        // Inicializa o SortableJS APENAS para a lista de exercícios
+        if (window.exerciseSortable) {
+            window.exerciseSortable.destroy();
+        }
+        window.exerciseSortable = new Sortable(list, {
+            animation: 150,
+            handle: '.ex-drag-handle', // Define que só arrasta segurando no ícone de 'grip'
+            ghostClass: 'sortable-ghost',
+            dragClass: 'sortable-drag',
+            onEnd: function(evt) {
+                if(evt.oldIndex === evt.newIndex) return;
+                
+                // Reordena o array na memória
+                const item = tempWorkoutPlan.splice(evt.oldIndex, 1)[0];
+                tempWorkoutPlan.splice(evt.newIndex, 0, item);
+                
+                // Limpa expansões para não bugar
+                expandedExIdx = -1; 
+                closeExerciseForm();
+                
+                // Re-renderiza para atualizar os indexs HTML e salva
+                renderExerciseList();
+                autoSaveWorkout();
+            }
+        });
+    }
+
+    function addExerciseToPlan(keepOpen = false) {
+        const name = document.getElementById('wpExName').value;
+        const sets = Math.max(1, parseInt(document.getElementById('wpExSets').value)) || 3;
+        const reps = Math.max(1, parseInt(document.getElementById('wpExReps').value)) || 10;
+        const weight = Math.max(0, parseFloat(document.getElementById('wpExWeight').value)) || '';
+        
+        if(!name) return showToast("Preencha o nome do exercício.", "alert-triangle", "var(--accent-amber)");
+
+        if(editingExIdx >= 0) {
+            let ex = tempWorkoutPlan[editingExIdx];
+            ex.name = name;
+            ex.sets = sets;
+            ex.reps = reps;
+            
+            if(ex.weight != weight) {
+                if(ex.baseWeight === undefined) ex.baseWeight = ex.prevWeight || ex.weight || 0;
+                ex.weight = weight;
+                ex.lastIncreased = Date.now();
+            }
+        } else {
+            tempWorkoutPlan.push({ name, sets, reps, weight, baseWeight: weight, lastIncreased: Date.now() });
+        }
+        
+        const btnToggleRest = document.getElementById('btnToggleRest');
+        if (btnToggleRest.innerText === "Remover Descanso") {
+            btnToggleRest.innerText = "Marcar Descanso";
+            btnToggleRest.style.color = "var(--accent-green)";
+            if(document.getElementById('wpDayTitleInput').value === 'Descanso') {
+                document.getElementById('wpDayTitleInput').value = '';
+            }
+        }
+        
+        expandedExIdx = -1; 
+        
+        if (keepOpen) {
+            editingExIdx = -1;
+            document.getElementById('wpExName').value = '';
+            document.getElementById('wpExWeight').value = '';
+            document.getElementById('wpExName').focus();
+        } else {
+            closeExerciseForm();
+        }
+        
+        renderExerciseList();
+        autoSaveWorkout();
+        
+        if (keepOpen) {
+            const form = document.getElementById('wpAddFormContainer');
+            const list = document.getElementById('wpExerciseList');
+            list.parentNode.insertBefore(form, list.nextSibling); 
+            form.style.display = 'block';
+            setTimeout(() => form.scrollIntoView({ behavior: 'smooth', block: 'center' }), 50);
+        }
+    }
+
+    function editExercise(e, idx) {
+        e.stopPropagation();
+        editingExIdx = idx;
+        let ex = tempWorkoutPlan[idx];
+        document.getElementById('wpExName').value = ex.name;
+        document.getElementById('wpExSets').value = ex.sets;
+        document.getElementById('wpExReps').value = ex.reps;
+        document.getElementById('wpExWeight').value = ex.weight || '';
+        
+        document.getElementById('wpAddBtn').innerText = "Salvar Edição";
+        document.getElementById('wpAddAndNewBtn').style.display = "none";
+
+        const form = document.getElementById('wpAddFormContainer');
+        const list = document.getElementById('wpExerciseList');
+        
+        // Garante que fique fora do Drag
+        if (form.parentNode === list) {
+            list.parentNode.insertBefore(form, list.nextSibling);
+        }
+        
+        form.style.display = 'block';
+        setTimeout(() => form.scrollIntoView({ behavior: 'smooth', block: 'center' }), 50);
+    }
+
+    function increaseWeight(e, idx) {
+        e.stopPropagation();
+        let ex = tempWorkoutPlan[idx];
+        let curW = parseFloat(ex.weight) || 0;
+        if(ex.baseWeight === undefined) ex.baseWeight = ex.prevWeight || ex.weight || 0;
+        ex.weight = curW + 1; 
+        ex.lastIncreased = Date.now();
+        renderExerciseList();
+        autoSaveWorkout();
+    }
+    
+    function decreaseWeight(e, idx) {
+        e.stopPropagation();
+        let ex = tempWorkoutPlan[idx];
+        let curW = parseFloat(ex.weight) || 0;
+        if(curW > 0) {
+            if(ex.baseWeight === undefined) ex.baseWeight = ex.prevWeight || ex.weight || 0;
+            ex.weight = Math.max(0, curW - 1); 
+            ex.lastIncreased = Date.now();
+            renderExerciseList();
+            autoSaveWorkout();
+        }
+    }
+
+    function removeExerciseFromPlan(e, idx) { 
+        e.stopPropagation();
+        tempWorkoutPlan.splice(idx, 1); 
+        expandedExIdx = -1;
+        closeExerciseForm(); 
+        renderExerciseList(); 
+        autoSaveWorkout();
+    }
+
+    function saveWorkoutPlan() {
+        autoSaveWorkout();
+        showToast("Treino finalizado!", "check-circle", "var(--accent-blue)");
+        closeModal('workoutPlanModal');
+    }
+
+    function generateManualWorkoutInsights() {
+        const aiList = document.getElementById('manual-aiWorkoutList');
+        if(!aiList) return;
+
+        let insights =[];
+        let totalEx = 0;
+        let stagnantEx =[], progressingEx =[], regressingEx =[];
+        const now = Date.now();
+        const daysToMs = 24 * 60 * 60 * 1000;
+
+        Object.values(data.workoutPlan).forEach(dayPlan => {
+            if(dayPlan && Array.isArray(dayPlan.exercises)) {
+                dayPlan.exercises.forEach(ex => {
+                    totalEx++;
+                    let currentW = parseFloat(ex.weight) || 0;
+                    let prevW = parseFloat(ex.prevWeight);
+                    
+                    if (!isNaN(prevW)) {
+                        if(currentW > prevW) progressingEx.push(ex.name);
+                        else if(currentW < prevW) regressingEx.push(ex.name);
+                    }
+                    
+                    let daysSinceChange = (now - (ex.lastIncreased || now)) / daysToMs;
+                    if(daysSinceChange > 14 && currentW === (prevW || currentW)) stagnantEx.push(ex.name);
+                });
+            }
+        });
+
+        if (totalEx === 0) {
+            insights.push({icon:'info', color:'var(--text-muted)', text:'Nenhum treino cadastrado. Estruture sua rotina semanal para iniciar as análises de sobrecarga.'});
+        } else {
+            if (progressingEx.length > 0) insights.push({icon:'trending-up', color:'var(--accent-green)', text:`<strong>Sobrecarga Progressiva:</strong> Cargas aumentadas em ${progressingEx.length} exercícios. Microlesões otimizadas.`});
+            if (regressingEx.length > 0) insights.push({icon:'trending-down', color:'var(--accent-red)', text:`<strong>Ajuste de Carga:</strong> Cargas reduzidas em ${regressingEx.length} exercícios. Foque na técnica ou deload.`});
+            if (stagnantEx.length > 0) insights.push({icon:'activity', color:'var(--accent-amber)', text:`<strong>Platô de Força:</strong> ${stagnantEx.length} exercícios estagnados há mais de 14 dias.`});
+        }
+        
+        if(insights.length > 0) aiList.innerHTML = buildInsightsHTML(insights);
+        else if (totalEx > 0) aiList.innerHTML = buildInsightsHTML([{icon:'check-circle', color:'var(--accent-blue)', text:'<strong>Cargas Estáveis:</strong> Mantenha a execução perfeita e prepare-se para progredir na próxima semana.'}]);
+        else aiList.innerHTML = '';
+        
+        lucide.createIcons();
+    }
+
+    function calculateRPG() {
+        let totalXP = 0; let str = 0, int = 0, wis = 0, vit = 0;
+        const bal = data.settings.expBalance || DEFAULT_EXP;
+
+        Object.values(data.entries).forEach(e => {
+            if (e.workout) { totalXP += bal.workout; str += bal.workout; }
+            if (e.sem_pmo) { totalXP += bal.pmo_day; wis += bal.pmo_day; }
+            if (e.no_sugar) { totalXP += bal.sugar_day; wis += bal.sugar_day; }
+            if (e.meditate) { totalXP += bal.meditate; wis += bal.meditate; }
+            const pages = parseInt(e.reading) || 0; if (pages > 0) { let rxp = pages * (bal.reading_pag || 2); totalXP += rxp; int += rxp; }
+            const sleep = parseFloat(e.sleep) || 0; if (sleep >= 7) { let sxp = bal.sleep_base || 30; totalXP += sxp; vit += sxp; }
+        });
+
+        let level = 1; let xpRemaining = totalXP; let xpNext = XP_BASE;
+        while (xpRemaining >= xpNext) { 
+            xpRemaining -= xpNext; 
+            level++; 
+            xpNext = Math.floor(XP_BASE * Math.pow(XP_GROWTH_FACTOR, level - 1)); 
+        }
+
+        window.currentRPGLevel = level;
+
+        let archKey = "balanced";
+        const maxStat = Math.max(str, int, wis, vit);
+        if (maxStat > totalXP * 0.4 && totalXP > 0) {
+            if (maxStat === str) archKey = "str"; else if (maxStat === int) archKey = "int"; else if (maxStat === wis) archKey = "wis"; else if (maxStat === vit) archKey = "vit";
+        }
+
+        const cls = RPG_CLASSES[archKey];
+        let tierIdx = 0; if(level >= 10) tierIdx = 1; if(level >= 25) tierIdx = 2; if(level >= 50) tierIdx = 3; if(level >= 80) tierIdx = 4;
+        const currentTier = cls.tiers[tierIdx];
+
+        document.getElementById('rpgClass').innerText = cls.name; document.getElementById('rpgRank').innerText = currentTier.name; document.getElementById('rpgRank').style.color = currentTier.c; document.getElementById('rpgQuote').innerText = cls.quotes[tierIdx]; document.getElementById('rpgLevel').innerText = `LVL ${level}`;
+        const avatarWrapper = document.getElementById('rpgAvatar'); avatarWrapper.style.background = cls.bg; avatarWrapper.style.borderColor = cls.color; avatarWrapper.innerHTML = `<i data-lucide="${cls.icon}" size="28" style="color:#fff;"></i>`;
+        const xpBar = document.getElementById('xpBar'); xpBar.style.width = `${(xpRemaining / xpNext) * 100}%`; xpBar.style.background = cls.bg; document.getElementById('xpText').innerText = `${Math.floor(xpRemaining)} / ${xpNext} XP`;
+
+        const hAvatar = document.getElementById('heroModalAvatar');
+        if (hAvatar) {
+            hAvatar.style.background = cls.bg; hAvatar.style.borderColor = cls.color; hAvatar.innerHTML = `<i data-lucide="${cls.icon}" size="32" style="color:#fff;"></i>`;
+            document.getElementById('heroModalClass').innerText = cls.name;
+            document.getElementById('heroModalRank').innerText = currentTier.name;
+            document.getElementById('heroModalRank').style.color = currentTier.c;
+            document.getElementById('heroModalLevel').innerText = `LVL ${level}`;
+            document.getElementById('heroModalLevel').style.background = cls.bg; 
+            document.getElementById('heroModalXpBar').style.width = `${(xpRemaining / xpNext) * 100}%`;
+            document.getElementById('heroModalXpBar').style.background = cls.bg;
+            document.getElementById('heroModalXpText').innerText = `${Math.floor(xpRemaining)} / ${xpNext} XP`;
+        }
+
+        lucide.createIcons();
+    }
+
+    function calcAllTimeStats() {
+        let stats = { w: 0, r: 0, m: 0, pmoMax: 0, sMax: 0 };
+        let pmoCur = 0, sCur = 0;
+        if(!data.settings.appStartDate) return stats;
+
+        let start = new Date(data.settings.appStartDate + 'T12:00:00');
+        let end = new Date(getTodayIso() + 'T12:00:00');
+
+        for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+            let dk = toIso(d.getFullYear(), d.getMonth(), d.getDate());
+            const e = data.entries[dk];
+
+            if (e && e.workout) stats.w++;
+            if (e && e.reading) stats.r += parseInt(e.reading) || 0;
+            if (e && e.meditate) stats.m++;
+
+            if (e && e.sem_pmo) { pmoCur++; if(pmoCur > stats.pmoMax) stats.pmoMax = pmoCur; } else pmoCur = 0;
+            if (e && e.no_sugar) { sCur++; if(sCur > stats.sMax) stats.sMax = sCur; } else sCur = 0;
+        }
+        return stats;
+    }
+
+    function renderAchievements() {
+        const container = document.getElementById('achievementsList');
+        if(!container) return;
+        container.innerHTML = '';
+
+        const stats = calcAllTimeStats();
+
+        ACHIEVEMENT_TRACKS.forEach(track => {
+            let current = 0;
+            if(track.id === 'level') current = window.currentRPGLevel || 1;
+            else if(track.id === 'workout') current = stats.w;
+            else if(track.id === 'pmo') current = stats.pmoMax;
+            else if(track.id === 'reading') current = stats.r;
+            else if(track.id === 'sugar') current = stats.sMax;
+            else if(track.id === 'meditate') current = stats.m;
+
+            let curTier = null;
+            for(let i=0; i<track.tiers.length; i++) {
+                if(current >= track.tiers[i].t) {
+                    curTier = track.tiers[i];
+                } else {
+                    break;
+                }
+            }
+
+            let isUnlocked = curTier !== null;
+            let color = isUnlocked ? curTier.c : 'var(--text-muted)';
+            let bgIcon = isUnlocked ? `background: ${color}15; color: ${color}; border: 1px solid ${color}40;` : `background: rgba(255,255,255,0.03); color: var(--text-muted); border: 1px solid var(--border-soft);`;
+
+            const div = document.createElement('div');
+            div.className = 'ach-card';
+            div.style.cssText = bgIcon;
+            div.onclick = () => openAchievementModal(track.id);
+            div.innerHTML = `<i data-lucide="${track.icon}" size="28"></i>`;
+            
+            container.appendChild(div);
+        });
+        lucide.createIcons();
+    }
+
+    function openAchievementModal(id) {
+        const track = ACHIEVEMENT_TRACKS.find(t => t.id === id);
+        if(!track) return;
+
+        const stats = calcAllTimeStats();
+        let current = 0;
+        if(track.id === 'level') current = window.currentRPGLevel || 1;
+        else if(track.id === 'workout') current = stats.w;
+        else if(track.id === 'pmo') current = stats.pmoMax;
+        else if(track.id === 'reading') current = stats.r;
+        else if(track.id === 'sugar') current = stats.sMax;
+        else if(track.id === 'meditate') current = stats.m;
+
+        let curTier = null;
+        let nextTier = null;
+
+        for(let i=0; i<track.tiers.length; i++) {
+            if(current >= track.tiers[i].t) {
+                curTier = track.tiers[i];
+            } else {
+                nextTier = track.tiers[i];
+                break;
+            }
+        }
+
+        let isUnlocked = curTier !== null;
+        let color = isUnlocked ? curTier.c : 'var(--text-muted)';
+        let title = isUnlocked ? curTier.n : track.name;
+        let target = nextTier ? nextTier.t : (curTier ? curTier.t : track.tiers[0].t);
+        let nextStr = nextTier ? `Próximo Nível: ${nextTier.n} (${target})` : 'Nível Máximo Alcançado! 🏆';
+        let pct = Math.min(100, (current / target) * 100);
+        let barColor = nextTier ? nextTier.c : color;
+        
+        let bgIcon = isUnlocked ? `background: ${color}20; color: ${color}; border: 1px solid ${color}50;` : `background: rgba(255,255,255,0.05); color: var(--text-muted); border: 1px solid var(--border-soft);`;
+
+        document.getElementById('achModalTitle').innerHTML = `<i data-lucide="${track.icon}" size="20"></i> ${track.name}`;
+        document.getElementById('achModalIcon').style.cssText = `width: 56px; height: 56px; border-radius: 16px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: 0.3s; ${bgIcon}`;
+        document.getElementById('achModalIcon').innerHTML = `<i data-lucide="${track.icon}" size="28"></i>`;
+        
+        document.getElementById('achModalName').innerText = title;
+        document.getElementById('achModalName').style.color = isUnlocked ? '#fff' : 'var(--text-muted)';
+        document.getElementById('achModalTier').innerText = isUnlocked ? `Patente Alcançada` : `Não Desbloqueado`;
+        document.getElementById('achModalTier').style.color = color;
+        
+        document.getElementById('achModalCount').innerText = `${current} / ${target}`;
+        document.getElementById('achModalBar').style.width = `${pct}%`;
+        document.getElementById('achModalBar').style.background = barColor;
+        
+        document.getElementById('achModalNext').innerText = nextStr;
+
+        openModal('achModal');
+        lucide.createIcons();
+    }
+
+    function renderCodex() {
+        const container = document.getElementById('codexContainer'); container.innerHTML = '';
+        for (const [key, cls] of Object.entries(RPG_CLASSES)) {
+            let tiersHtml = cls.tiers.map(t => `<div class="codex-tier-row"><span class="codex-tier-lvl">Lvl ${t.lvl}+</span><span class="codex-tier-name">${t.name}</span><span class="codex-tier-rarity" style="color: ${t.c};">${t.rar}</span></div>`).join('');
+            container.innerHTML += `<div class="codex-card"><div class="codex-header"><div class="codex-icon" style="background: ${cls.bg}; border: 1px solid ${cls.color};"><i data-lucide="${cls.icon}" size="20" style="color:#fff;"></i></div><div class="codex-title">${cls.name}</div></div><div class="codex-req">${cls.req}</div><div class="codex-tiers">${tiersHtml}</div></div>`;
+        }
+        lucide.createIcons();
+    }
+
+    function toIso(y, m, d) { return `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`; }
+    function changeMonth(dir) { curMonth += dir; if(curMonth > 11) { curMonth = 0; curYear++; } if(curMonth < 0) { curMonth = 11; curYear--; } render(); }
+
+    function renderEvalBanner() {
+        const container = document.getElementById('evalBannerContainer');
+        const todayIso = getTodayIso();
+        
+        let lastDateStr = data.settings.appStartDate; 
+        if (data.evaluations && data.evaluations.length > 0) {
+            lastDateStr = data.evaluations[data.evaluations.length - 1].date;
+        }
+        
+        const lastDate = new Date(lastDateStr + 'T12:00:00');
+        const today = new Date(todayIso + 'T12:00:00');
+        const diffTime = today - lastDate;
+        const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+        
+        let daysLeft = 15 - diffDays;
+        
+        if (daysLeft > 7) { container.innerHTML = ''; return; }
+        
+        if (daysLeft > 1 && daysLeft <= 7) {
+            container.innerHTML = `<div style="background: rgba(255,255,255,0.03); border: 1px solid var(--border-soft); border-radius: 12px; padding: 12px; margin-bottom: 16px; text-align: center; font-size: 11px; color: var(--text-muted);">⏳ Avaliação Morfológica em ${daysLeft} dias. Mantenha o plano.</div>`;
+        } else if (daysLeft === 1) {
+            container.innerHTML = `<div style="background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.3); border-radius: 12px; padding: 12px; margin-bottom: 16px; text-align: center; font-size: 11px; color: var(--accent-amber); font-weight: 600;">⚠️ Avaliação amanhã ao acordar. Evite retenção de líquidos hoje.</div>`;
+        } else {
+            container.innerHTML = `<button class="btn-action" style="background: rgba(16, 185, 129, 0.15); color: var(--accent-green); border: 1px solid rgba(16, 185, 129, 0.4); margin-bottom: 16px; font-weight: 800;" onclick="openEvalModal()"><i data-lucide="ruler" size="18"></i> Realizar Avaliação Física Agora</button>`;
+        }
+        lucide.createIcons();
+    }
+
+    function openGraphModal(type) {
+        let labels =[];
+        let plotData =[];
+        let titleStr = '';
+        let color, bgColor;
+
+        if (type === 'weight') {
+            titleStr = 'Peso';
+            color = '#10b981'; 
+            bgColor = 'rgba(16, 185, 129, 0.8)';
+            
+            let weightEntries = Object.keys(data.entries)
+                .filter(k => data.entries[k].weight && parseFloat(data.entries[k].weight) > 0)
+                .sort((a,b) => new Date(a) - new Date(b))
+                .slice(-15); 
+                
+            labels.push('Início');
+            plotData.push(parseFloat(data.settings.initialWeight) || 0);
+
+            if (weightEntries.length > 0) {
+                weightEntries.forEach(k => {
+                    let parts = k.split('-');
+                    labels.push(`${parts[2]}/${parts[1]}`);
+                    plotData.push(parseFloat(data.entries[k].weight));
+                });
+            }
+        } else {
+            titleStr = type === 'arm' ? 'Braço' : 'Cintura';
+            color = type === 'arm' ? '#3b82f6' : '#8b5cf6';
+            bgColor = type === 'arm' ? 'rgba(59, 130, 246, 0.8)' : 'rgba(139, 92, 246, 0.8)';
+            
+            labels.push('Início');
+            plotData.push(parseFloat(type === 'arm' ? data.settings.initialArm : data.settings.initialBelly) || 0);
+            
+            if (data.evaluations) {
+                data.evaluations.forEach(ev => {
+                    let parts = ev.date.split('-');
+                    labels.push(`${parts[2]}/${parts[1]}`);
+                    plotData.push(parseFloat(type === 'arm' ? ev.arm : ev.belly));
+                });
+            }
+        }
+
+        document.getElementById('graphModalTitle').innerHTML = `<i data-lucide="bar-chart-2" size="20"></i> Evolução (${titleStr})`;
+        openModal('graphModal');
+
+        if(morphChartInstance) morphChartInstance.destroy();
+        const ctx = document.getElementById('morphGraph').getContext('2d');
+        morphChartInstance = new Chart(ctx, {
+            type: 'bar', 
+            data: { 
+                labels: labels, 
+                datasets:[{ 
+                    label: `${titleStr}`, 
+                    data: plotData, 
+                    backgroundColor: bgColor, 
+                    borderRadius: 6, 
+                    borderSkipped: false,
+                    barPercentage: 0.8,
+                    maxBarThickness: 16 
+                }] 
+            },
+            options: { 
+                responsive: true, 
+                maintainAspectRatio: false, 
+                plugins: { legend: { display: false } }, 
+                scales: { 
+                    x: { display: true, grid: { display: false }, ticks: {color: 'rgba(255,255,255,0.4)', font: {size: 10}} }, 
+                    y: { display: true, beginAtZero: false, grid: { display: false }, ticks:{color:'rgba(255,255,255,0.4)'} } 
+                } 
+            }
+        });
+        
+        lucide.createIcons();
+    }
+
+    function openEvalModal() {
+        let lastA = data.settings.initialArm || '';
+        let lastB = data.settings.initialBelly || '';
+        if(data.evaluations && data.evaluations.length > 0) {
+            lastA = data.evaluations[data.evaluations.length - 1].arm;
+            lastB = data.evaluations[data.evaluations.length - 1].belly;
+        }
+        document.getElementById('evalArm').value = lastA;
+        document.getElementById('evalBelly').value = lastB;
+        openModal('evalModal');
+    }
+
+    function saveEvaluation() {
+        let arm = Math.max(0, parseFloat(document.getElementById('evalArm').value)) || 0;
+        let belly = Math.max(0, parseFloat(document.getElementById('evalBelly').value)) || 0;
+        if(arm <= 0 || belly <= 0) return alert("Preencha os valores de braço e cintura corretamente.");
+        
+        const todayIso = getTodayIso();
+        if(!data.evaluations) data.evaluations =[];
+        
+        let todayIndex = data.evaluations.findIndex(e => e.date === todayIso);
+        if(todayIndex >= 0) {
+            data.evaluations[todayIndex].arm = arm;
+            data.evaluations[todayIndex].belly = belly;
+        } else {
+            data.evaluations.push({ date: todayIso, arm: arm, belly: belly });
+        }
+        
+        saveData();
+        showToast("Avaliação salva!");
+        closeModal('evalModal');
+        render(); 
+    }
+
+    function render() {
+        renderEvalBanner();
+        const todayIso = getTodayIso();
+        
+        const grid = document.getElementById('calendarGrid'); grid.innerHTML = '';
+        const heatGrid = document.getElementById('moodHeatmapGrid'); heatGrid.innerHTML = '';
+        const firstDay = new Date(curYear, curMonth, 1).getDay(); const daysInMonth = new Date(curYear, curMonth + 1, 0).getDate();
+        const monthNames =["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
+        document.getElementById('monthLabel').innerText = `${monthNames[curMonth]} ${curYear}`.toUpperCase();
+
+        for(let i=0; i<firstDay; i++) { grid.innerHTML += '<div></div>'; heatGrid.innerHTML += '<div></div>'; }
+
+        let workouts = 0, pagesRead = 0, sleepTotal = 0, sleepDays = 0;
+        let calInTotal = 0, calOutTotal = 0, totalProtein = 0, proteinDays = 0; let weightsArr =[];
+        let totalWater = 0, waterDays = 0;
+
+        for(let d=1; d<=daysInMonth; d++) {
+            const dateKey = toIso(curYear, curMonth, d); const e = data.entries[dateKey] || {};
+            if (e.workout) workouts++; pagesRead += parseInt(e.reading) || 0;
+            if (parseFloat(e.sleep) > 0) { sleepTotal += parseFloat(e.sleep); sleepDays++; }
+            if (parseFloat(e.calIn) > 0) calInTotal += parseFloat(e.calIn);
+            if (parseFloat(e.calOut) > 0) calOutTotal += parseFloat(e.calOut);
+            if (parseFloat(e.protein) > 0) { totalProtein += parseFloat(e.protein); proteinDays++; }
+            if (parseFloat(e.water) > 0) { totalWater += parseFloat(e.water); waterDays++; }
+            if (parseFloat(e.weight) > 0) weightsArr.push(parseFloat(e.weight));
+
+            const div = document.createElement('div'); const hasData = e.workout || e.sem_pmo || e.no_sugar || e.reading || e.sleep || e.mood;
+            div.className = 'day' + (hasData ? ' filled' : ''); if(dateKey === todayIso) div.classList.add('today'); div.innerText = d; div.onclick = () => openDay(dateKey); grid.appendChild(div);
+            
+            const heatDiv = document.createElement('div'); heatDiv.className = 'heat-square'; heatDiv.innerText = d;
+            if(e.mood) { heatDiv.style.color = 'rgba(255,255,255,0.9)';
+                if(e.mood === 'Otimo') { heatDiv.style.background = 'rgba(16, 185, 129, 0.2)'; heatDiv.style.borderColor = 'rgba(16, 185, 129, 0.4)'; }
+                else if(e.mood === 'Bom') { heatDiv.style.background = 'rgba(59, 130, 246, 0.2)'; heatDiv.style.borderColor = 'rgba(59, 130, 246, 0.4)'; }
+                else if(e.mood === 'Neutro') { heatDiv.style.background = 'rgba(245, 158, 11, 0.2)'; heatDiv.style.borderColor = 'rgba(245, 158, 11, 0.4)'; }
+                else { heatDiv.style.background = 'rgba(239, 68, 68, 0.2)'; heatDiv.style.borderColor = 'rgba(239, 68, 68, 0.4)'; }
+            } heatGrid.appendChild(heatDiv);
+        }
+
+        let initialW = parseFloat(data.settings.initialWeight) || 0; let avgWeight = "0.0"; let weightDiff = 0;
+        if(weightsArr.length > 0) { 
+            avgWeight = (weightsArr.reduce((a,b)=>a+b,0) / weightsArr.length).toFixed(1); 
+            let currentW = weightsArr[weightsArr.length-1]; 
+            if(currentW > 0 && initialW > 0) weightDiff = currentW - initialW;
+        }
+        
+        document.getElementById('resWeightAvg').innerHTML = `${avgWeight} <span class="unit" style="color:var(--accent-blue);">kg</span>`;
+        document.getElementById('resWeightDiffBadge').innerHTML = getTrendBadgeHTML(weightDiff, 'kg', true); 
+
+        let initialArm = parseFloat(data.settings.initialArm) || 0;
+        let initialBelly = parseFloat(data.settings.initialBelly) || 0;
+        let latestArm = initialArm; let latestBelly = initialBelly;
+        let diffArm = 0; let diffBelly = 0;
+
+        if (data.evaluations && data.evaluations.length > 0) {
+            const latest = data.evaluations[data.evaluations.length - 1];
+            latestArm = latest.arm; latestBelly = latest.belly;
+            
+            let prevArm = initialArm; let prevBelly = initialBelly;
+            if (data.evaluations.length > 1) {
+                prevArm = data.evaluations[data.evaluations.length - 2].arm;
+                prevBelly = data.evaluations[data.evaluations.length - 2].belly;
+            }
+            diffArm = latestArm - prevArm;
+            diffBelly = latestBelly - prevBelly;
+        }
+
+        document.getElementById('resArmVal').innerHTML = `${latestArm.toFixed(1)} <span class="unit">cm</span>`;
+        document.getElementById('resArmDiffBadge').innerHTML = getTrendBadgeHTML(diffArm, 'cm', false); 
+        
+        document.getElementById('resBellyVal').innerHTML = `${latestBelly.toFixed(1)} <span class="unit">cm</span>`;
+        document.getElementById('resBellyDiffBadge').innerHTML = getTrendBadgeHTML(diffBelly, 'cm', true); 
+
+        // GERAL
+        document.getElementById('resCalInVal').innerHTML = `${calInTotal.toLocaleString('pt-BR')} <span class="unit">kcal</span>`; document.getElementById('resCalOutVal').innerHTML = `${calOutTotal.toLocaleString('pt-BR')} <span class="unit">kcal</span>`;
+        
+        let curDayPassed = (curYear === new Date().getFullYear() && curMonth === new Date().getMonth()) ? new Date().getDate() : daysInMonth; if(curDayPassed === 0) curDayPassed = 1;
+        let basalConfig = parseInt(data.settings.basal) || 1900; let basalAccumulated = basalConfig * curDayPassed; let saldoReal = calInTotal - (basalAccumulated + calOutTotal);
+        
+        let saldoEl = document.getElementById('resCalNet'); saldoEl.innerHTML = `${(saldoReal > 0 ? '+' : '')}${saldoReal.toFixed(0)} <span class="unit" style="color:${saldoReal <= 0 ? 'var(--accent-green)' : 'var(--accent-red)'}">kcal</span>`; saldoEl.style.color = saldoReal <= 0 ? "var(--accent-green)" : "var(--accent-red)";
+        let consistency = curDayPassed > 0 ? Math.round((workouts / curDayPassed) * 100) : 0; document.getElementById('resConsistency').innerText = consistency + "%";
+        
+        let avgSleep = sleepDays > 0 ? (sleepTotal/sleepDays).toFixed(1) : "0"; document.getElementById('resSonoMed').innerText = avgSleep + "h";
+        let avgWater = waterDays > 0 ? (totalWater/waterDays).toFixed(1) : "0.0"; document.getElementById('resWaterMed').innerHTML = `${avgWater} <span class="unit">L</span>`;
+        let avgProt = proteinDays > 0 ? (totalProtein/proteinDays).toFixed(0) : "0"; document.getElementById('resProtMed').innerHTML = `${avgProt} <span class="unit">g</span>`;
+
+        // METAS BARS
+        const g = data.goals;
+        document.getElementById('goalWorkoutText').innerText = `${workouts}/${g.workouts}`; document.getElementById('goalWorkoutBar').style.width = `${Math.min(100, (workouts/g.workouts)*100)}%`;
+        document.getElementById('goalReadingText').innerText = `${pagesRead}/${g.reading}`; document.getElementById('goalReadingBar').style.width = `${Math.min(100, (pagesRead/g.reading)*100)}%`;
+        document.getElementById('goalSleepText').innerText = `${avgSleep}h (Meta: ${g.sleep}h)`; document.getElementById('goalSleepBar').style.width = `${Math.min(100, (avgSleep/g.sleep)*100)}%`;
+        
+        document.getElementById('goalArmText').innerText = `${latestArm.toFixed(1)} / ${g.targetArm} cm`; 
+        let pctArm = g.targetArm > 0 ? (latestArm / g.targetArm)*100 : 0;
+        document.getElementById('goalArmBar').style.width = `${Math.min(100, pctArm)}%`;
+        
+        document.getElementById('goalBellyText').innerText = `${latestBelly.toFixed(1)} / ${g.targetBelly} cm`; 
+        let pctBelly = initialBelly > g.targetBelly ? ((initialBelly - latestBelly) / (initialBelly - g.targetBelly))*100 : 0;
+        if(pctBelly < 0) pctBelly = 0; 
+        if(latestBelly <= g.targetBelly && g.targetBelly > 0) pctBelly = 100;
+        document.getElementById('goalBellyBar').style.width = `${Math.min(100, pctBelly)}%`;
+
+        renderCustomGoals();
+        let pmoStr = calculateStreaks();
+        calculateRPG();
+        
+        renderAchievements();
+
+        generateManualGeralAndResumoAI(workouts, avgSleep, pmoStr.pmo, pmoStr.sugar, calInTotal, calOutTotal, basalAccumulated, weightDiff, totalProtein, proteinDays);
+        if(currentTabIndex === 3) renderEnergy();
+        
+        lucide.createIcons();
+    }
+
+    function renderCustomGoals() {
+        const container = document.getElementById('customGoalsList'); container.innerHTML = '';
+        if(data.customGoals.length === 0) { container.innerHTML = '<div style="font-size:12px; color:var(--text-muted); text-align:center; padding:10px;">Nenhuma meta personalisada criada.</div>'; return; }
+        data.customGoals.forEach(cg => {
+            const pct = Math.min(100, (cg.current / cg.target) * 100); const div = document.createElement('div'); div.className = 'custom-goal-card'; 
+            div.innerHTML = `
+                <div class="goal-info" onclick="openCustomGoalModal(${cg.id})">
+                    <div class="goal-row" style="margin-bottom:8px;">
+                        <span>${cg.name}</span>
+                        <span style="color:var(--accent-amber);">${cg.current}/${cg.target}</span>
+                    </div>
+                    <div class="goal-bar-bg" style="margin:0; height:6px;">
+                        <div class="goal-bar-fill" style="width: ${pct}%; background: var(--accent-amber);"></div>
+                    </div>
+                </div>
+                <button class="goal-increment-btn" onclick="event.stopPropagation(); incrementCustomGoal(${cg.id})">
+                    <i data-lucide="plus" size="20"></i>
+                </button>
+            `;
+            container.appendChild(div);
+        });
+        lucide.createIcons();
+    }
+
+    function incrementCustomGoal(id) {
+        const goal = data.customGoals.find(g => g.id === id);
+        if (goal && goal.current < goal.target) {
+            goal.current++;
+            saveData();
+            renderCustomGoals();
+            if (goal.current === goal.target) {
+                showToast('Meta Concluída!', 'award');
+            }
+        }
+    }
+
+    function openCustomGoalModal(id = null) {
+        document.getElementById('cgId').value = id || ''; const delBtn = document.getElementById('cgDeleteBtn');
+        if(id) { const cg = data.customGoals.find(x => x.id === id); document.getElementById('cgTitle').innerText = "Editar Meta"; document.getElementById('cgName').value = cg.name; document.getElementById('cgCurrent').value = cg.current; document.getElementById('cgTarget').value = cg.target; delBtn.style.display = 'block'; } 
+        else { document.getElementById('cgTitle').innerText = "Nova Meta"; document.getElementById('cgName').value = ''; document.getElementById('cgCurrent').value = 0; document.getElementById('cgTarget').value = ''; delBtn.style.display = 'none'; }
+        openModal('customGoalModal');
+    }
+
+    function saveCustomGoal() {
+        const id = document.getElementById('cgId').value; const name = document.getElementById('cgName').value; 
+        const current = Math.max(0, parseInt(document.getElementById('cgCurrent').value)) || 0; 
+        const target = Math.max(1, parseInt(document.getElementById('cgTarget').value)) || 1;
+        if(!name) return alert("Preencha o nome da meta.");
+        if(id) { const cg = data.customGoals.find(x => x.id == id); cg.name = name; cg.current = current; cg.target = target; } else { data.customGoals.push({ id: Date.now(), name, current, target }); }
+        saveData(); showToast('Meta pessoal salva!'); closeModal('customGoalModal'); renderCustomGoals();
+    }
+
+    function calculateStreaks() {
+        let pmo = 0, sugar = 0; let checkDate = new Date();
+        const todayIso = getTodayIso();
+        while(true) { 
+            const dk = toIso(checkDate.getFullYear(), checkDate.getMonth(), checkDate.getDate()); 
+            if (data.entries[dk]?.sem_pmo) pmo++; 
+            else break; 
+            checkDate.setDate(checkDate.getDate() - 1); 
+        }
+        checkDate = new Date();
+        while(true) { 
+            const dk = toIso(checkDate.getFullYear(), checkDate.getMonth(), checkDate.getDate()); 
+            if (data.entries[dk]?.no_sugar) sugar++; 
+            else break; 
+            checkDate.setDate(checkDate.getDate() - 1); 
+        }
+
+        document.getElementById('streakPmo').innerText = pmo; document.getElementById('streakSugar').innerText = sugar;
+        const st = document.getElementById('systemStatus');
+        if (data.entries[todayIso] && data.entries[todayIso].sem_pmo === false) { st.innerText = "Status Crítico 🚨"; st.style.color = "var(--accent-red)"; st.style.background = "rgba(239, 68, 68, 0.1)"; } 
+        else { st.innerText = "Status Seguro ✅"; st.style.color = "var(--accent-green)"; st.style.background = "rgba(16, 185, 129, 0.1)"; }
+        return { pmo, sugar };
+    }
+
+    function openModal(id) { 
+        const modal = document.getElementById(id); 
+        modal.style.display = 'flex'; 
+        setTimeout(() => modal.classList.add('open'), 10); 
+        document.body.classList.add('no-scroll');
+    }
+    
+    function closeModal(id) { 
+        const modal = document.getElementById(id); 
+        modal.classList.remove('open'); 
+        setTimeout(() => modal.style.display = 'none', 300); 
+        setTimeout(() => { if(!document.querySelector('.modal-overlay.open')) document.body.classList.remove('no-scroll'); }, 300);
+    }
+
+    function openDay(key) {
+        selectedDate = key;
+        const e = data.entries[key] || {};
+        const isFuture = key > getTodayIso();
+
+        document.getElementById('modalDateTitle').innerText = new Date(key + 'T12:00:00').toLocaleDateString('pt-BR', {day:'2-digit', month:'long'});
+        
+        const setCheck = (id, lblId, val) => { const chk = document.getElementById(id); chk.checked = !!val; toggleChip(chk, lblId); };
+        setCheck('chkWorkout', 'lblWorkout', e.workout); setCheck('chkNofap', 'lblNofap', e.sem_pmo); setCheck('chkSugar', 'lblSugar', e.no_sugar); setCheck('chkMeditate', 'lblMeditate', e.meditate);
+        
+        document.getElementById('inWeight').value = e.weight || ''; document.getElementById('inWater').value = e.water || ''; document.getElementById('inProtein').value = e.protein || ''; document.getElementById('inCardio').value = e.cardio || ''; document.getElementById('inCalIn').value = e.calIn || ''; document.getElementById('inCalOut').value = e.calOut || ''; 
+        document.getElementById('inSleep').value = e.sleep || ''; document.getElementById('inReading').value = e.reading || ''; document.getElementById('inNotes').value = e.notes || '';
+        
+        const inputs = document.getElementById('dayModal').querySelectorAll('input, textarea');
+        const buttons = document.getElementById('dayModal').querySelectorAll('button');
+        const labels = document.getElementById('dayModal').querySelectorAll('.chip-label');
+        
+        inputs.forEach(input => input.disabled = isFuture);
+        
+        buttons.forEach(button => {
+            if (!button.classList.contains('close-btn') && button.id !== 'dayModalCloseBtn') {
+                button.disabled = isFuture;
+            }
+        });
+        
+        labels.forEach(label => {
+            label.style.pointerEvents = isFuture ? 'none' : 'auto';
+            label.style.opacity = isFuture ? '0.5' : '1';
+        });
+
+        const saveBtn = document.getElementById('btnSaveDay');
+        const clearBtn = document.getElementById('btnClearDay');
+
+        if(isFuture) {
+            saveBtn.innerText = 'Dia Futuro';
+            saveBtn.style.opacity = '0.5';
+            clearBtn.style.opacity = '0.5';
+        } else {
+            saveBtn.innerText = 'Salvar';
+            saveBtn.style.opacity = '1';
+            clearBtn.style.opacity = '1';
+        }
+        
+        openModal('dayModal');
+    }
+
+    function toggleChip(checkbox, labelId) { const lbl = document.getElementById(labelId); if (checkbox.checked) lbl.classList.add('selected'); else lbl.classList.remove('selected'); }
+    
+    function saveDay() {
+        if (!data.entries[selectedDate]) data.entries[selectedDate] = {}; const entry = data.entries[selectedDate];
+        entry.workout = document.getElementById('chkWorkout').checked; entry.sem_pmo = document.getElementById('chkNofap').checked; entry.no_sugar = document.getElementById('chkSugar').checked; entry.meditate = document.getElementById('chkMeditate').checked;
+        
+        entry.weight = Math.max(0, parseFloat(document.getElementById('inWeight').value)) || ''; 
+        entry.water = Math.max(0, parseFloat(document.getElementById('inWater').value)) || ''; 
+        entry.protein = Math.max(0, parseInt(document.getElementById('inProtein').value)) || ''; 
+        entry.cardio = Math.max(0, parseInt(document.getElementById('inCardio').value)) || ''; 
+        entry.calIn = Math.max(0, parseInt(document.getElementById('inCalIn').value)) || ''; 
+        entry.calOut = Math.max(0, parseInt(document.getElementById('inCalOut').value)) || ''; 
+        
+        entry.sleep = Math.max(0, parseFloat(document.getElementById('inSleep').value)) || ''; 
+        entry.reading = Math.max(0, parseInt(document.getElementById('inReading').value)) || ''; 
+        entry.notes = document.getElementById('inNotes').value;
+        saveData(); showToast('Registro do dia salvo'); closeModal('dayModal'); render();
+    }
+
+    function toggleEnergyView() {
+        if (currentEnergyView === 'today') { currentEnergyView = 'month'; document.getElementById('energyTodayCard').style.display = 'none'; document.getElementById('energyMonthCard').style.display = 'block'; } 
+        else { currentEnergyView = 'today'; document.getElementById('energyMonthCard').style.display = 'none'; document.getElementById('energyTodayCard').style.display = 'block'; }
+        renderEnergy();
+    }
+
+    function calcDailyEnergyScore(e, basal) {
+        if (!e) return { score: 0, details: { sleep: 0, body: 0, nut: 0, shield: 0, mind: 0 } };
+        let score = 0; let det = { sleep: 0, body: 0, nut: 0, shield: 0, mind: 0 };
+        
+        let sleep = parseFloat(e.sleep) || 0;
+        if(sleep >= 7) { score += 20; det.sleep = 20; } else if(sleep >= 5) { score += 10; det.sleep = 10; }
+        
+        if(e.workout) { score += 15; det.body += 15; }
+        if((parseFloat(e.cardio) || 0) >= 10) { score += 10; det.body += 10; }
+        
+        let water = parseFloat(e.water) || 0;
+        if(water >= 2.0) { score += 10; det.body += 10; }
+        
+        let calIn = parseFloat(e.calIn) || 0; let calOut = parseFloat(e.calOut) || 0;
+        if(calIn > 0) {
+            let net = calIn - (basal + calOut);
+            if(net <= 0) { score += 10; det.nut = 10; } else if(net <= 500) { score += 5; det.nut = 5; }
+        }
+        
+        if(e.sem_pmo) { score += 10; det.shield += 10; }
+        if(e.no_sugar) { score += 5; det.shield += 5; }
+        
+        if(e.meditate) { score += 10; det.mind += 10; }
+        if((parseInt(e.reading) || 0) >= 10) { score += 10; det.mind += 10; }
+        
+        if(e.sem_pmo === false) { score = Math.floor(score / 2); }
+        
+        return { score: Math.min(100, score), details: det };
+    }
+
+    function renderEnergy() {
+        const todayIso = getTodayIso();
+        const eToday = data.entries[todayIso] || null;
+        const basalConfig = parseInt(data.settings.basal) || 1900;
+        
+        const scoreData = calcDailyEnergyScore(eToday, basalConfig);
+        const scoreToday = scoreData.score; const det = scoreData.details;
+        
+        let color = "var(--accent-red)"; let shadowColor = "rgba(239, 68, 68, 0.5)"; 
+        if (scoreToday > 30) { color = "var(--accent-amber)"; shadowColor = "rgba(245, 158, 11, 0.5)"; }
+        if (scoreToday > 60) { color = "var(--accent-green)"; shadowColor = "rgba(16, 185, 129, 0.5)"; }
+        if (scoreToday > 85) { color = "var(--accent-blue)"; shadowColor = "rgba(59, 130, 246, 0.5)"; }
+
+        const valEl = document.getElementById('energyTodayVal');
+        valEl.innerText = `${scoreToday}%`; valEl.style.color = color; valEl.style.textShadow = `0 0 15px ${shadowColor}`;
+        const glowEl = document.getElementById('energyOrbGlow'); glowEl.style.boxShadow = `inset 0 0 50px ${color}`;
+
+        const aiTodayEl = document.getElementById('manual-aiEnergyTodayList');
+        if(aiTodayEl) {
+            let insightsToday =[];
+            if(!eToday) {
+                insightsToday.push({icon:'info', color:'var(--text-muted)', text:'Sistemas inativos. Insira os dados do dia para calibrar a energia.'});
+            } else {
+                if (scoreToday >= 80) insightsToday.push({icon:'zap', color:'var(--accent-green)', text:'<strong>Overdrive ativado:</strong> Parâmetros alinhados. Capacidade cognitiva maximizada para Deep Work.'});
+                else if (scoreToday >= 50) insightsToday.push({icon:'activity', color:'var(--accent-blue)', text:'<strong>Sistemas operacionais:</strong> Energia suficiente, mas há margem para melhorar fatores base (água/sono/treino).'});
+                else insightsToday.push({icon:'battery-warning', color:'var(--accent-red)', text:'<strong>Carga Crítica:</strong> Desgaste severo. Priorize o descanso e evite estímulos artificiais imediatamente.'});
+                
+                if(det.sleep < 15) insightsToday.push({icon:'bed', color:'var(--accent-amber)', text:'Déficit de sono está limitando sua recuperação mitocondrial.'});
+                if(eToday.sem_pmo === false) insightsToday.push({icon:'shield-off', color:'var(--accent-red)', text:'A falha dopaminérgica reduziu sua energia base pela metade.'});
+                if(det.body < 20) insightsToday.push({icon:'move-3d', color:'var(--accent-amber)', text:'Pouca atividade física reduziu a oxigenação cerebral e muscular.'});
+            }
+            aiTodayEl.innerHTML = buildInsightsHTML(insightsToday);
+        }
+
+        const listToday = document.getElementById('energyTodayList'); listToday.innerHTML = '';
+        if (!eToday) { listToday.innerHTML = '<div style="font-size:12px; color:var(--text-muted); text-align:center;">Preencha seus hábitos de hoje.</div>'; } 
+        else {
+            let sleepHtml = det.sleep === 20 ? `<div class="energy-item good"><i data-lucide="bed"></i> Descansado</div>` : `<div class="energy-item warn"><i data-lucide="bed"></i> Sono Razoável/Ruim</div>`;
+            let bodyHtml = det.body >= 15 ? `<div class="energy-item good"><i data-lucide="dumbbell"></i> Corpo Forte</div>` : `<div class="energy-item warn"><i data-lucide="dumbbell"></i> Sedentário</div>`;
+            listToday.innerHTML = sleepHtml + bodyHtml;
+        }
+
+        const daysInMonth = new Date(curYear, curMonth + 1, 0).getDate();
+        let curDayPassed = (curYear === new Date().getFullYear() && curMonth === new Date().getMonth()) ? new Date().getDate() : daysInMonth;
+        
+        let energyData =[]; let labels =[]; let tooltipsData =[];
+        let sumEnergy = 0, sumSleep = 0, sleepDays = 0, pmoFails = 0, workoutCount = 0, totalReading = 0;
+        let moods = { otimo: 0, bom: 0, neutro: 0, ruim: 0 };
+
+        for(let d=1; d<=curDayPassed; d++) {
+            const e = data.entries[toIso(curYear, curMonth, d)] || null;
+            labels.push(d); let s = calcDailyEnergyScore(e, basalConfig).score;
+            energyData.push(s); sumEnergy += s; tooltipsData.push(`Sono: ${e && e.sleep ? e.sleep + 'h' : '0h'}`);
+            if (e) {
+                if(parseFloat(e.sleep) > 0) { sumSleep += parseFloat(e.sleep); sleepDays++; }
+                if(e.sem_pmo === false) pmoFails++; if(e.workout) workoutCount++; totalReading += parseInt(e.reading) || 0;
+                if(e.mood === 'Otimo') moods.otimo++; if(e.mood === 'Bom') moods.bom++; if(e.mood === 'Neutro') moods.neutro++; if(e.mood === 'Ruim') moods.ruim++;
+            }
+        }
+
+        const aiMonthEl = document.getElementById('manual-aiEnergyMonthList');
+        if(aiMonthEl) {
+            let avgCur = curDayPassed > 0 ? (sumEnergy/curDayPassed) : 0;
+            let insightsMonth =[];
+            if(curDayPassed < 2) {
+                insightsMonth.push({icon:'info', color:'var(--text-muted)', text:'Aguardando mais dados para gerar o perfil do ciclo.'});
+            } else {
+                if(avgCur < 50) insightsMonth.push({icon:'battery-warning', color:'var(--accent-red)', text:`<strong>Falência Sistêmica (Média ${avgCur.toFixed(0)}%):</strong> Seu corpo está lutando contra a própria rotina. Reveja seus pilares urgentes.`});
+                else if(avgCur < 75) insightsMonth.push({icon:'activity', color:'var(--accent-blue)', text:`<strong>Estabilidade (Média ${avgCur.toFixed(0)}%):</strong> Platô de adaptação. Para subir de nível, aumente a exigência física.`});
+                else insightsMonth.push({icon:'zap', color:'var(--accent-green)', text:`<strong>Alta Performance (Média ${avgCur.toFixed(0)}%):</strong> Sinergia metabólica confirmada. Hormônios operando a seu favor.`});
+
+                let avgSleepMonth = sleepDays > 0 ? sumSleep / sleepDays : 0;
+                if(avgSleepMonth < 6.5 && avgSleepMonth > 0) insightsMonth.push({icon:'moon', color:'var(--accent-red)', text:`<strong>Sono em Déficit:</strong> A média de ${avgSleepMonth.toFixed(1)}h está minando sua capacidade anabólica e cognitiva.`});
+            }
+            aiMonthEl.innerHTML = buildInsightsHTML(insightsMonth);
+        }
+
+        document.getElementById('energyMoodCounts').innerHTML = `<span style="color:var(--accent-green)">🔥 Ót: ${moods.otimo}</span><span style="color:var(--accent-blue)">🙂 Bom: ${moods.bom}</span><span style="color:var(--accent-amber)">😐 Neu: ${moods.neutro}</span><span style="color:var(--accent-red)">⚠️ R: ${moods.ruim}</span>`;
+
+        let barColors = energyData.map(score => {
+            if (score <= 30) return 'rgba(239, 68, 68, 0.8)'; if (score <= 60) return 'rgba(245, 158, 11, 0.8)'; if (score <= 85) return 'rgba(16, 185, 129, 0.8)'; return 'rgba(59, 130, 246, 0.9)'; 
+        });
+
+        if(energyChartInstance) energyChartInstance.destroy();
+        const ctx = document.getElementById('energyChart').getContext('2d');
+        energyChartInstance = new Chart(ctx, {
+            type: 'bar', data: { labels: labels, datasets:[{ label: 'Energia', data: energyData, backgroundColor: barColors, borderRadius: 6, borderSkipped: false, barPercentage: 0.8, maxBarThickness: 16 }] },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { callbacks: { label: function(c) { return[`Energia: ${c.parsed.y}%`, tooltipsData[c.dataIndex]]; } }, backgroundColor: 'rgba(15, 23, 42, 0.9)', titleFont: { family: 'Poppins', size: 13 }, bodyFont: { family: 'Inter', size: 12 }, padding: 12, cornerRadius: 12, displayColors: false } }, scales: { x: { display: true, grid: { display: false }, ticks: {color: 'rgba(255,255,255,0.4)', font: {size: 10, family: 'Inter'}} }, y: { display: false, min: 0, max: 100, grid: { display: false } } } }
+        });
+
+        document.getElementById('energyMonthConsistency').innerText = (curDayPassed > 0 ? Math.round((workoutCount / curDayPassed) * 100) : 0) + "%";
+        lucide.createIcons();
+    }
+
+    function loadSettingsInputs() {
+        document.getElementById('cfgBasal').value = data.settings.basal || ''; 
+        document.getElementById('cfgWeight').value = data.settings.initialWeight || '';
+        document.getElementById('cfgHeight').value = data.settings.height || '';
+        document.getElementById('cfgAge').value = data.settings.age || '';
+        document.getElementById('cfgInitialArm').value = data.settings.initialArm || '';
+        document.getElementById('cfgInitialBelly').value = data.settings.initialBelly || '';
+
+        const b = data.settings.expBalance || DEFAULT_EXP;
+        document.getElementById('cfgExpWorkout').value = b.workout || 100; document.getElementById('cfgExpReading').value = b.reading_pag || 2; document.getElementById('cfgExpPmo').value = b.pmo_day || 50; document.getElementById('cfgExpSugar').value = b.sugar_day || 20; document.getElementById('cfgExpMeditate').value = b.meditate || 40; document.getElementById('cfgExpSleep').value = b.sleep_base || 30;
+    }
+    
+    function autoCalcBasal() {
+        const w = parseFloat(document.getElementById('cfgWeight').value) || 0;
+        const h = parseInt(document.getElementById('cfgHeight').value) || 0;
+        const a = parseInt(document.getElementById('cfgAge').value) || 0;
+        if(w > 0 && h > 0 && a > 0) {
+            const basal = Math.round((10 * w) + (6.25 * h) - (5 * a) + 5);
+            document.getElementById('cfgBasal').value = basal;
+        } else {
+            alert("Preencha Idade, Altura e Peso para calcular.");
+        }
+    }
+
+    function saveSettings() { 
+        data.settings.basal = Math.max(0, parseInt(document.getElementById('cfgBasal').value)) || 1900; 
+        data.settings.initialWeight = Math.max(0, parseFloat(document.getElementById('cfgWeight').value)) || 0; 
+        data.settings.height = Math.max(0, parseInt(document.getElementById('cfgHeight').value)) || 0; 
+        data.settings.age = Math.max(0, parseInt(document.getElementById('cfgAge').value)) || 0; 
+        data.settings.initialArm = Math.max(0, parseFloat(document.getElementById('cfgInitialArm').value)) || 0; 
+        data.settings.initialBelly = Math.max(0, parseFloat(document.getElementById('cfgInitialBelly').value)) || 0; 
+        
+        saveData(); showToast("Configurações salvas!"); closeModal('settingsModal'); render(); 
+    }
+
+    function saveBalance() {
+        if(!data.settings.expBalance) data.settings.expBalance = {};
+        data.settings.expBalance.workout = Math.max(0, parseInt(document.getElementById('cfgExpWorkout').value)) || 100; 
+        data.settings.expBalance.reading_pag = Math.max(0, parseInt(document.getElementById('cfgExpReading').value)) || 2; 
+        data.settings.expBalance.pmo_day = Math.max(0, parseInt(document.getElementById('cfgExpPmo').value)) || 50; 
+        data.settings.expBalance.sugar_day = Math.max(0, parseInt(document.getElementById('cfgExpSugar').value)) || 20; 
+        data.settings.expBalance.meditate = Math.max(0, parseInt(document.getElementById('cfgExpMeditate').value)) || 40; 
+        data.settings.expBalance.sleep_base = Math.max(0, parseInt(document.getElementById('cfgExpSleep').value)) || 30;
+        saveData(); showToast('Balanceamento de XP salvo!'); closeModal('balanceModal'); render();
+    }
+    
+    function openGoalsModal() { 
+        document.getElementById('goalInputWorkout').value = data.goals.workouts; 
+        document.getElementById('goalInputReading').value = data.goals.reading; 
+        document.getElementById('goalInputSleep').value = data.goals.sleep; 
+        document.getElementById('goalInputArm').value = data.goals.targetArm || '';
+        document.getElementById('goalInputBelly').value = data.goals.targetBelly || '';
+        openModal('goalsModal'); 
+    }
+    
+    function saveGoals() { 
+        data.goals.workouts = Math.max(0, parseInt(document.getElementById('goalInputWorkout').value)) || 20; 
+        data.goals.reading = Math.max(0, parseInt(document.getElementById('goalInputReading').value)) || 200; 
+        data.goals.sleep = Math.max(0, parseFloat(document.getElementById('goalInputSleep').value)) || 7; 
+        data.goals.targetArm = Math.max(0, parseFloat(document.getElementById('goalInputArm').value)) || 40.0;
+        data.goals.targetBelly = Math.max(0, parseFloat(document.getElementById('goalInputBelly').value)) || 80.0;
+        saveData(); showToast('Metas Base salvas!'); closeModal('goalsModal'); render(); 
+    }
+
+    function exportData() { const blob = new Blob([JSON.stringify(data)], { type: "application/json" }); const url = URL.createObjectURL(blob); const a = document.createElement("a"); a.href = url; a.download = `planner_elite_s24_backup.json`; document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url); }
+    function importData(event) { const file = event.target.files[0]; if (!file) return; const reader = new FileReader(); reader.onload = function(e) { try { const imported = JSON.parse(e.target.result); if (imported.entries) { data = imported; if(!data.goals) data.goals = DEFAULT_GOALS; if(!data.settings) data.settings = DEFAULT_SETTINGS; if(!data.settings.expBalance) data.settings.expBalance = DEFAULT_EXP; if(!data.customGoals) data.customGoals =[]; if(!data.evaluations) data.evaluations =[]; if(!data.workoutPlan) data.workoutPlan = {0:{title:'',isRest:false,exercises:[]},1:{title:'',isRest:false,exercises:[]},2:{title:'',isRest:false,exercises:[]},3:{title:'',isRest:false,exercises:[]},4:{title:'',isRest:false,exercises:[]},5:{title:'',isRest:false,exercises:[]},6:{title:'',isRest:false,exercises:[]}}; saveData(); render(); closeModal('settingsModal'); alert("Dados importados com sucesso!"); } else { alert("Arquivo JSON inválido."); } } catch (err) { alert("Erro ao ler o arquivo JSON."); } }; reader.readAsText(file); }
+
+    function openSOS() {
+        openModal('sosModal');
+        const circleText = document.getElementById('breatheCircle'); let inhale = true; clearInterval(breatheInterval); circleText.innerText = "INSPIRE";
+        breatheInterval = setInterval(() => { inhale = !inhale; circleText.innerText = inhale ? "INSPIRE" : "EXPIRE"; circleText.style.color = inhale ? "var(--accent-blue)" : "var(--accent-green)"; circleText.style.borderColor = inhale ? "var(--accent-blue)" : "var(--accent-green)"; }, 4000);
+        rollSOSAction();
+        lucide.createIcons();
+    }
+    
+    function closeSOS() { closeModal('sosModal'); clearInterval(breatheInterval); stopSOSTimer(); }
+    function rollSOSAction() { const actions =["Faça 20 flexões agora.", "Beba 2 copos de água gelada.", "Lave o rosto com água fria.", "Saia do quarto e ande 5 min.", "Respire fundo 10 vezes.", "Leia 2 páginas de um livro."]; document.getElementById('sosActionText').innerText = actions[Math.floor(Math.random() * actions.length)]; }
+    function startSOSTimer() { const display = document.getElementById('sosTimer'); const btn = document.getElementById('btnSosStart'); if(btn.innerText === "Travado") return; btn.innerText = "Travado"; btn.style.opacity = "0.5"; let duration = 600; clearInterval(sosTimerInterval); sosTimerInterval = setInterval(() => { const m = parseInt(duration / 60, 10); const s = parseInt(duration % 60, 10); display.textContent = m + ":" + (s < 10 ? "0" + s : s); if (--duration < 0) { clearInterval(sosTimerInterval); display.textContent = "VENCEU!"; display.style.color = "var(--accent-green)"; } }, 1000); }
+    function stopSOSTimer() { clearInterval(sosTimerInterval); document.getElementById('sosTimer').textContent = "10:00"; document.getElementById('sosTimer').style.color = "var(--text-main)"; const btn = document.getElementById('btnSosStart'); btn.innerText = "Iniciar 10 Min"; btn.style.opacity = "1"; }
+
+    function saveData() { localStorage.setItem('planner_elite_p_v6', JSON.stringify(data)); }
+
+    init();
+  </script>
+</body>
+</html>
