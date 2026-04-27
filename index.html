@@ -1,3 +1,4 @@
+
 <!doctype html>
 <html lang="pt-BR">
 <head>
@@ -498,13 +499,13 @@
         <div class="card">
             <div class="section-title">
                 <span style="display:flex; align-items:center; gap:8px;"><i data-lucide="target" size="18"></i> Metas Base</span>
-                <button class="btn-edit" onclick="openModal('goalsModal')">Editar</button>
+                <button class="btn-edit" onclick="openGoalsModal()">Editar</button>
             </div>
             <div class="goal-row"><span>Treinos Físicos</span><span id="goalWorkoutText">0/20</span></div>
             <div class="goal-bar-bg"><div class="goal-bar-fill" id="goalWorkoutBar" style="width: 0%; background: var(--accent-blue);"></div></div>
 
             <div class="goal-row"><span>Leitura (Páginas)</span><span id="goalReadingText">0/200</span></div>
-            <div class="goal-bar-bg"><div class="goal-bar-fill" id="goalReadingBar" style="width: background: var(--accent-purple);"></div></div>
+            <div class="goal-bar-bg"><div class="goal-bar-fill" id="goalReadingBar" style="width: 0%; background: var(--accent-purple);"></div></div>
 
             <div class="goal-row"><span>Média de Sono</span><span id="goalSleepText">0h (Meta: 7h)</span></div>
             <div class="goal-bar-bg"><div class="goal-bar-fill" id="goalSleepBar" style="width: 0%; background: var(--accent-green);"></div></div>
@@ -1019,8 +1020,23 @@
   </div>
 
   <script>
+    /* =======================================
+       FUNÇÕES UTILITÁRIAS DE DATA
+       (Corrigido para evitar erros de Fuso Horário)
+       ======================================= */
+    function toIso(y, m, d) { 
+        return `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`; 
+    }
+    
+    function getTodayIso() {
+        const d = new Date();
+        return toIso(d.getFullYear(), d.getMonth(), d.getDate());
+    }
+
+    /* =======================================
+       IA - COMUNICAÇÃO COM A GROQ
+       ======================================= */
     async function callGroqAI(userPrompt, targetId, btnElement) {
-        // Busca a chave de API das configurações em vez de deixá-la no código
         const GROQ_API_KEY = data.settings.groqKey;
         
         if (!GROQ_API_KEY) {
@@ -1298,10 +1314,6 @@
     ];
 
     window.currentRPGLevel = 1;
-
-    function getTodayIso() {
-        return new Date().toLocaleDateString('en-CA');
-    }
     
     let data = JSON.parse(localStorage.getItem('planner_elite_p_v6')) || {};
     if(!data.entries) data.entries = {};
@@ -1341,6 +1353,41 @@
     let editingExIdx = -1;
     let sosTimerInterval = null, breatheInterval = null;
 
+    /* =======================================
+       🛡️ HISTORY TRAP (Impede saída acidental)
+       ======================================= */
+    function initHistoryTrap() {
+        // Coloca a "armadilha" no histórico inicial da página
+        history.pushState({ trap: true }, null, location.href);
+
+        window.addEventListener('popstate', function(event) {
+            // Toda vez que apertar voltar, o popstate é acionado.
+            // Recolocamos a armadilha imediatamente para travar o usuário na tela
+            history.pushState({ trap: true }, null, location.href);
+
+            // Verifica se há algum modal aberto
+            const openModals = document.querySelectorAll('.modal-overlay.open');
+            
+            if (openModals.length > 0) {
+                // Tem modal aberto? Pega o que está por cima de todos e fecha
+                const topModal = openModals[openModals.length - 1];
+                closeModal(topModal.id);
+            } else {
+                // Nenhum modal aberto? Pergunta se quer fechar o app
+                openConfirmModal(
+                    "Sair do App?",
+                    "Deseja realmente fechar o Planner Elite?",
+                    "Sim, Sair",
+                    () => {
+                        // Desativa a armadilha e simula um voltar real para sair
+                        window.onpopstate = null; 
+                        window.history.go(-2); 
+                    }
+                );
+            }
+        });
+    }
+
     function autoSaveWorkout() {
         const id = document.getElementById('wpDayId').value;
         const title = document.getElementById('wpDayTitleInput').value;
@@ -1370,6 +1417,7 @@ setInterval(() => {
 }, 1000);
 
 function init() {
+    initHistoryTrap(); // Inicia a trava de Voltar do celular
     checkDailyMood();
     loadSettingsInputs();
     initSwipe(); 
@@ -1425,8 +1473,13 @@ function init() {
         confirmActionHandler = onOkAction;
         openModal('confirmModal');
     }
+    
     function closeConfirmModal() { closeModal('confirmModal'); confirmActionHandler = null; }
-    function executeConfirm() { if(confirmActionHandler) confirmActionHandler(); closeConfirmModal(); }
+    
+    function executeConfirm() { 
+        if(confirmActionHandler) confirmActionHandler(); 
+        closeConfirmModal(); 
+    }
 
     function askRelapse() { openConfirmModal("Registrar Falha?", "Isso irá resetar seu streak sem PMO para zero.", "Confirmar Derrota", doRelapse); }
     
@@ -1588,7 +1641,8 @@ function init() {
         const planObj = data.workoutPlan[dayId] || { title: '', isRest: false, exercises:[] };
         document.getElementById('wpDayTitleInput').value = planObj.title || '';
         
-        tempWorkoutPlan = JSON.parse(JSON.stringify(planObj.exercises ||[]));
+        // Uso de structuredClone para cópia profunda segura
+        tempWorkoutPlan = structuredClone(planObj.exercises ||[]);
         expandedExIdx = -1; 
         
         const btnToggleRest = document.getElementById('btnToggleRest');
@@ -1638,7 +1692,7 @@ function init() {
     function confirmCopyWorkout(sourceId) {
         const sourcePlan = data.workoutPlan[sourceId];
         if(sourcePlan) {
-            tempWorkoutPlan = JSON.parse(JSON.stringify(sourcePlan.exercises ||[]));
+            tempWorkoutPlan = structuredClone(sourcePlan.exercises ||[]);
             document.getElementById('wpDayTitleInput').value = sourcePlan.title || '';
             
             const btnToggleRest = document.getElementById('btnToggleRest');
@@ -1990,7 +2044,7 @@ function init() {
         let archKey = "balanced";
         const maxStat = Math.max(str, int, wis, vit);
         if (maxStat > totalXP * 0.4 && totalXP > 0) {
-            if (maxStat === str) archKey = "str"; else if (maxStat === int) archKey = "int"; else if (maxStat === wis) archKey = "wis"; else if (maxStat === vit) archKey = "vit";
+            if (maxStat === str) archKey = "str"; else if (maxStat === int) archKey = "int"; else if (maxStat === wis) archKey = "vit"; else if (maxStat === vit) archKey = "vit";
         }
 
         const cls = RPG_CLASSES[archKey];
@@ -2142,7 +2196,6 @@ function init() {
         lucide.createIcons();
     }
 
-    function toIso(y, m, d) { return `${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`; }
     function changeMonth(dir) { curMonth += dir; if(curMonth > 11) { curMonth = 0; curYear++; } if(curMonth < 0) { curMonth = 11; curYear--; } render(); }
 
     function renderEvalBanner() {
